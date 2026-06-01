@@ -1,0 +1,11 @@
+{
+    "char_select_title": "Sélection du personnage",
+    "char_create_title": "Création de personnage",
+    "char_max_slots": "Vous avez atteint le nombre maximum de personnages.",
+    "char_invalid_name": "Nom ou prénom invalide.",
+    "char_created": "Personnage créé avec succès.",
+    "char_deleted": "Personnage supprimé.",
+    "money_insufficient": "Fonds insuffisants.",
+    "banned": "Vous êtes banni de Noxa FA.",
+    "loading_account": "Vérification de votre compte..."
+}
