@@ -1,8 +1,17 @@
 -- =====================================================================
---  NOXA FA — INSTALLATION COMPLÈTE (fichier unique à importer)
---  Importez CE SEUL fichier dans votre base (TXAdmin > Database, ou
---  phpMyAdmin / HeidiSQL). Idempotent : réimportable sans risque.
+--  NOXA FA — INSTALLATION COMPLÈTE
+--  Ouvrez phpMyAdmin, cliquez sur "Importer" depuis la page d'accueil
+--  (sans sélectionner de base), choisissez ce fichier et cliquez Exécuter.
+--  La base noxa_fa est créée automatiquement.
+--  Idempotent : réimportable sans risque.
 --  Compatible MariaDB 10.5+ / MySQL 8+. InnoDB / utf8mb4.
+-- =====================================================================
+
+CREATE DATABASE IF NOT EXISTS `noxa_fa`
+    CHARACTER SET utf8mb4
+    COLLATE utf8mb4_unicode_ci;
+
+USE `noxa_fa`;
 --
 --  Contenu : schéma de base (comptes, personnages, transactions, logs)
 --            + sociétés, whitelist emplois, factures, bans, véhicules.
