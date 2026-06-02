@@ -137,7 +137,15 @@ S.onNet('noxa:bank:invoice:pay', function(src, ply, invoiceId)
 
     local amount = U.sanitizeAmount(inv.amount)
     if not amount then return end
+
+    -- Réservation atomique AVANT le débit : seule la première requête concurrente
+    -- réussit la réclamation, ce qui élimine tout double-paiement (race condition).
+    if not DB.claimInvoice(invoiceId, ply.citizenid) then
+        return TriggerClientEvent('noxa:notify', src, 'Facture déjà traitée.', 'inform')
+    end
     if not ply:removeMoney(E.Accounts.BANK, amount, 'invoice:pay') then
+        -- Débit refusé : on rouvre la facture pour rester cohérent.
+        DB.setInvoiceStatus(invoiceId, E.InvoiceStatus.PENDING)
         return TriggerClientEvent('noxa:notify', src, 'Solde insuffisant pour payer.', 'error')
     end
 
@@ -149,7 +157,7 @@ S.onNet('noxa:bank:invoice:pay', function(src, ply, invoiceId)
         if emitter then emitter:addMoney(E.Accounts.BANK, amount, 'invoice:received') end
     end
 
-    DB.setInvoiceStatus(invoiceId, E.InvoiceStatus.PAID)
+    -- Statut déjà passé à 'paid' par DB.claimInvoice (réservation atomique).
     TriggerClientEvent('noxa:notify', src, ('Facture payée : %s'):format(U.money(amount)), 'success')
 end)
 

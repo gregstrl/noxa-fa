@@ -205,6 +205,18 @@ function DB.setInvoiceStatus(invoiceId, status)
         { status, invoiceId })
 end
 
+--- Réclame atomiquement une facture encore en attente (anti double-paiement).
+--- Passe son statut à 'paid' UNIQUEMENT si elle est toujours 'pending'.
+--- Garantit qu'un seul paiement aboutit même en cas d'events concurrents.
+---@return boolean claimed
+function DB.claimInvoice(invoiceId, targetCid)
+    local affected = MySQL.update.await([[
+        UPDATE noxa_invoices SET status = 'paid', paid_at = NOW()
+        WHERE id = ? AND target_cid = ? AND status = 'pending'
+    ]], { invoiceId, targetCid })
+    return (affected or 0) > 0
+end
+
 -- ---------------------------------------------------------------------
 --  Bannissements (audit ; l'état actif vit dans noxa_accounts)
 -- ---------------------------------------------------------------------
