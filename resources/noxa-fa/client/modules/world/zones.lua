@@ -145,15 +145,10 @@ end)
 --  enrichis par leurs modules respectifs via World.on(type, fn).
 -- ---------------------------------------------------------------------
 
--- Banque & distributeurs : réutilise l'interface bancaire NUI existante.
+-- Banque & distributeurs : réutilise l'ouverture bancaire guardée (module banque)
+-- pour partager le même verrou de focus (anti double-ouverture / curseur bloqué).
 World.on('bank', function()
-    local data = Noxa.GetPlayerData and Noxa.GetPlayerData()
-    if not data then return end
-    NUI.setFocus(true)
-    NUI.send('banking', 'open', {
-        name = data.name, citizenid = data.citizenid,
-        cash = data.cash or 0, bank = data.bank or 0,
-    })
+    if Noxa.Banking and Noxa.Banking.open then Noxa.Banking.open() end
 end)
 
 -- Épicerie : ouvre la boutique NUI (catalogue servi par la config partagée).

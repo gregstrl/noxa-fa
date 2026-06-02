@@ -6,12 +6,20 @@
 -- =====================================================================
 
 Noxa = Noxa or {}
+Noxa.Banking = Noxa.Banking or {}
 local NUI = Noxa.NUI
 
--- /banque : ouvre l'interface bancaire.
-RegisterCommand('banque', function()
+-- Verrou d'ouverture : sans ce garde, F7 (keymapping, déclenché même focus NUI
+-- actif) ré-ouvrait la banque et ré-acquérait le focus sans relâche correspondant
+-- → compteur de focus déséquilibré, curseur bloqué.
+local isOpen = false
+
+-- Ouvre l'interface bancaire (point d'entrée unique : commande + zones POI).
+function Noxa.Banking.open()
+    if isOpen then return end
     local data = Noxa.GetPlayerData and Noxa.GetPlayerData()
     if not data then return end
+    isOpen = true
     NUI.setFocus(true)
     NUI.send('banking', 'open', {
         name      = data.name,
@@ -19,7 +27,10 @@ RegisterCommand('banque', function()
         cash      = data.cash or 0,
         bank      = data.bank or 0,
     })
-end, false)
+end
+
+-- /banque : ouvre l'interface bancaire.
+RegisterCommand('banque', Noxa.Banking.open, false)
 RegisterKeyMapping('banque', 'Ouvrir la banque', 'keyboard', 'F7')
 
 -- Synchronise les soldes affichés quand l'état joueur change (statebag).
@@ -36,7 +47,10 @@ end)
 --  Callbacks NUI -> serveur
 -- ---------------------------------------------------------------------
 
-RegisterNUICallback('bankClose', function(_, cb) NUI.setFocus(false); cb('ok') end)
+RegisterNUICallback('bankClose', function(_, cb)
+    if isOpen then isOpen = false; NUI.setFocus(false) end
+    cb('ok')
+end)
 
 RegisterNUICallback('bankDeposit', function(body, cb)
     local amount = tonumber(body.amount)
