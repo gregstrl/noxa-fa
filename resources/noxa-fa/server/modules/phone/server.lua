@@ -24,8 +24,8 @@ end
 --- Garantit que le joueur possède un numéro (génère + persiste si absent).
 local function ensureNumber(ply)
     if ply.phone and ply.phone ~= '' then return ply.phone end
-    local num
-    repeat num = genNumber() until true   -- collision improbable (espace large)
+    -- Collision improbable sur un espace de ~1M de numéros : tirage direct.
+    local num = genNumber()
     ply.phone = num
     DB.setCharacterPhone(ply.id, num)
     return num
