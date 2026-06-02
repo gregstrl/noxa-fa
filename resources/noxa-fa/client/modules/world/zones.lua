@@ -112,7 +112,10 @@ CreateThread(function()
             for _, point in ipairs(list) do
                 local d = #(pos - point.coords)
                 if d < SCAN_RADIUS then
-                    wait = 0   -- un point est à portée de scan : boucle réactive
+                    -- À portée de scan : on rapproche le polling (approche du POI)
+                    -- sans pour autant tourner chaque frame tant qu'aucun point
+                    -- n'est réellement à portée d'interaction.
+                    if wait > 200 then wait = 200 end
                     if d < nearestDist then
                         nearest = point
                         nearestDist = d
@@ -124,6 +127,7 @@ CreateThread(function()
         scan(dynamic)
 
         if nearest then
+            wait = 0   -- point à portée : boucle réactive (prompt + touche E)
             showPrompt(nearest)
             if IsControlJustPressed(0, 38) then  -- touche E
                 trigger(nearest)
