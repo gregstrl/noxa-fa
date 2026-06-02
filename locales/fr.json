@@ -7,5 +7,21 @@
     "char_deleted": "Personnage supprimé.",
     "money_insufficient": "Fonds insuffisants.",
     "banned": "Vous êtes banni de Noxa FA.",
-    "loading_account": "Vérification de votre compte..."
+    "loading_account": "Vérification de votre compte...",
+    "duty_on": "Vous êtes en service.",
+    "duty_off": "Vous avez quitté le service.",
+    "job_hired": "Vous avez été embauché·e.",
+    "job_fired": "Vous avez été licencié·e.",
+    "job_promoted": "Votre grade a été modifié.",
+    "bank_deposit": "Dépôt effectué.",
+    "bank_withdraw": "Retrait effectué.",
+    "bank_transfer_sent": "Virement envoyé.",
+    "bank_transfer_recv": "Virement reçu.",
+    "invoice_new": "Nouvelle facture reçue.",
+    "invoice_paid": "Facture payée.",
+    "invoice_refused": "Facture refusée.",
+    "society_funds_low": "La caisse de la société est insuffisante.",
+    "admin_no_perm": "Permission insuffisante.",
+    "admin_kicked": "Vous avez été expulsé du serveur.",
+    "admin_target_not_found": "Cible introuvable."
 }

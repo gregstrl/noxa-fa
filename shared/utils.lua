@@ -65,4 +65,28 @@ function U.jsonEncode(tbl)
     return '{}'
 end
 
+-- Compte les éléments d'une table (y compris associatives)
+function U.tableCount(t)
+    local n = 0
+    for _ in pairs(t) do n = n + 1 end
+    return n
+end
+
+-- Borne un entier dans [min, max] (validation serveur des montants/grades)
+function U.clampInt(v, min, max)
+    v = tonumber(v)
+    if not v then return nil end
+    v = math.floor(v)
+    if v < min then return min end
+    if v > max then return max end
+    return v
+end
+
+-- Formate un montant en monnaie lisible (ex: « 12 500 $ »)
+function U.money(amount)
+    local s = tostring(math.floor(tonumber(amount) or 0))
+    local formatted = s:reverse():gsub('(%d%d%d)', '%1 '):reverse():gsub('^%s+', '')
+    return formatted .. ' $'
+end
+
 return U

@@ -44,6 +44,7 @@ function Player.new(src, row, account)
     self.job_grade   = row.job_grade
     self.gang        = row.gang
     self.gang_grade  = row.gang_grade
+    self.duty        = false   -- en service ? (non persisté : reset chaque session)
 
     self.cash        = math.floor(row.cash or 0)
     self.bank        = math.floor(row.bank or 0)
@@ -167,6 +168,65 @@ function Player:getJobSalary()
     return g and g.salary or 0
 end
 
+--- Retourne la table du grade de job courant (label, perms, isBoss...).
+function Player:getJobGradeData()
+    return E.getJobGrade(self.job, self.job_grade)
+end
+
+--- Vérifie une permission de grade (recruit, fire, promote, bill, manageFunds).
+---@param perm string
+---@return boolean
+function Player:hasJobPerm(perm)
+    local g = self:getJobGradeData()
+    return (g and g.perms and g.perms[perm]) == true
+end
+
+--- Le joueur est-il patron de sa société ?
+function Player:isBoss()
+    local g = self:getJobGradeData()
+    return (g and g.isBoss) == true
+end
+
+--- Société (caisse) rattachée au job courant, ou nil.
+function Player:getSociety()
+    local job = E.Jobs[self.job]
+    return job and job.society or nil
+end
+
+-- ---------------------------------------------------------------------
+--  Service (duty) — état volatil, jamais persisté
+-- ---------------------------------------------------------------------
+
+--- Active/désactive le service. Les services publics ne touchent leur
+--- salaire qu'en service (cf. module jobs).
+---@param state boolean
+function Player:setDuty(state)
+    self.duty = state and true or false
+    self:syncState()
+    return self.duty
+end
+
+-- ---------------------------------------------------------------------
+--  Organisation criminelle
+-- ---------------------------------------------------------------------
+
+--- Définit l'appartenance à un gang depuis le référentiel autoritaire.
+---@return boolean ok
+function Player:setGang(gangName, grade)
+    local gang = E.Gangs[gangName]
+    if not gang then return false end
+    grade = tonumber(grade) or 0
+    if not gang.grades[grade] then grade = next(gang.grades) end
+    self.gang = gangName
+    self.gang_grade = grade
+    self:syncState()
+    return true
+end
+
+function Player:getGangGradeData()
+    return E.getGangGrade(self.gang, self.gang_grade)
+end
+
 -- ---------------------------------------------------------------------
 --  Métadonnées
 -- ---------------------------------------------------------------------
@@ -186,11 +246,29 @@ end
 
 --- Pousse un instantané non sensible vers le client (UI, HUD) via statebag répliqué.
 function Player:syncState()
+    local jobGrade  = self:getJobGradeData()
+    local gangGrade = self:getGangGradeData()
+    local jobDef    = E.Jobs[self.job]
+    local gangDef   = E.Gangs[self.gang]
     local data = {
         citizenid = self.citizenid,
         name      = self:getName(),
-        job       = { name = self.job, grade = self.job_grade },
-        gang      = { name = self.gang, grade = self.gang_grade },
+        job       = {
+            name    = self.job,
+            label   = jobDef and jobDef.label or self.job,
+            grade   = self.job_grade,
+            gradeLabel = jobGrade and jobGrade.label or '',
+            isBoss  = jobGrade and jobGrade.isBoss or false,
+            onDuty  = self.duty,
+            society = jobDef and jobDef.society or nil,
+        },
+        gang      = {
+            name    = self.gang,
+            label   = gangDef and gangDef.label or self.gang,
+            grade   = self.gang_grade,
+            gradeLabel = gangGrade and gangGrade.label or '',
+            isBoss  = gangGrade and gangGrade.isBoss or false,
+        },
         cash      = self.cash,
         bank      = self.bank,
         metadata  = self.metadata,

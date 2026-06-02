@@ -63,28 +63,8 @@ exports('RemoveMoney',   Eco.remove)
 exports('GetMoney',      Eco.get)
 exports('TransferMoney', Eco.transfer)
 
--- ---------------------------------------------------------------------
---  Paie automatique des salaires (versée en banque)
--- ---------------------------------------------------------------------
-
--- Intervalle de paie : toutes les 30 minutes de jeu.
-local PAY_INTERVAL = 30 * 60 * 1000
-
-CreateThread(function()
-    while true do
-        Wait(PAY_INTERVAL)
-        local paid = 0
-        for src, ply in pairs(Noxa.Players.getAll()) do
-            local salary = ply:getJobSalary()
-            if salary and salary > 0 then
-                ply:addMoney(E.Accounts.BANK, salary, 'salary:' .. ply.job)
-                paid = paid + 1
-            end
-        end
-        if paid > 0 then
-            U.print('info', 'Paie versée à %d joueur(s).', paid)
-        end
-    end
-end)
+-- Note : la paie automatique des salaires est gérée par le module Emplois
+-- (server/modules/jobs/server.lua), où elle est prélevée sur les caisses
+-- société. L'économie ne fournit ici que les primitives monétaires.
 
 return Eco

@@ -49,4 +49,40 @@ C.Save = {
     interval = 5 * 60 * 1000,   -- sauvegarde périodique auto : 5 minutes
 }
 
+-- Banque
+C.Banking = {
+    maxWithdraw  = 1000000,   -- retrait max par opération (cash depuis banque)
+    maxDeposit   = 5000000,   -- dépôt max par opération
+    maxTransfer  = 5000000,   -- virement max par opération
+    transferFee  = 0.0,       -- frais de virement (0.0 = gratuit, 0.02 = 2%)
+    invoiceMax   = 1000000,   -- montant max d'une facture
+    invoiceTTL   = 7,         -- durée de vie d'une facture impayée (jours)
+}
+
+-- Emplois / paie
+C.Jobs = {
+    payInterval   = 30 * 60 * 1000, -- versement des salaires : 30 min
+    payRequiresSociety = true,      -- ne verser que si la société a les fonds
+    maxGrade      = 20,             -- borne anti-abus côté boss-actions
+}
+
+-- Sociétés
+C.Societies = {
+    saveInterval = 2 * 60 * 1000,   -- persistance des soldes société : 2 min
+}
+
+-- Administration
+C.Admin = {
+    -- Durées de ban prédéfinies (en secondes ; 0 = permanent)
+    banDurations = {
+        ['1h']  = 3600,
+        ['1d']  = 86400,
+        ['3d']  = 259200,
+        ['7d']  = 604800,
+        ['30d'] = 2592000,
+        ['perm'] = 0,
+    },
+    announcePrefix = '^1[ADMIN]^7 ',
+}
+
 return C

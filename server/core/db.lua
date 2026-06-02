@@ -120,4 +120,116 @@ function DB.log(category, level, license, message, data)
         { category, level, license, message, data and U.jsonEncode(data) or nil })
 end
 
+-- ---------------------------------------------------------------------
+--  Sociétés (comptes partagés)
+-- ---------------------------------------------------------------------
+
+--- Charge toutes les sociétés (appelé une seule fois au démarrage).
+---@return table[] rows
+function DB.getSocieties()
+    return MySQL.query.await('SELECT * FROM noxa_societies') or {}
+end
+
+--- Crée une société si absente (seed depuis les enums au boot).
+function DB.ensureSociety(name, label, sType, startBalance)
+    return MySQL.insert.await([[
+        INSERT INTO noxa_societies (name, label, type, balance) VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE label = VALUES(label), type = VALUES(type)
+    ]], { name, label, sType, startBalance or 0 })
+end
+
+--- Persiste le solde d'une société (sauvegarde périodique).
+function DB.saveSocietyBalance(name, balance)
+    MySQL.update('UPDATE noxa_societies SET balance = ? WHERE name = ?', { balance, name })
+end
+
+function DB.logSocietyTx(society, txType, amount, balance, actor, reason)
+    MySQL.insert([[
+        INSERT INTO noxa_society_transactions (society, type, amount, balance, actor, reason)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ]], { society, txType, amount, balance, actor, reason })
+end
+
+-- ---------------------------------------------------------------------
+--  Whitelist d'emploi
+-- ---------------------------------------------------------------------
+
+--- Renvoie le grade max autorisé pour un citoyen sur un job, ou nil.
+---@return integer|nil
+function DB.getJobWhitelist(citizenid, job)
+    return MySQL.scalar.await(
+        'SELECT max_grade FROM noxa_job_whitelist WHERE citizenid = ? AND job = ?',
+        { citizenid, job })
+end
+
+--- Accorde / met à jour une whitelist (boss-action ou admin).
+function DB.setJobWhitelist(citizenid, job, maxGrade, grantedBy)
+    MySQL.insert([[
+        INSERT INTO noxa_job_whitelist (citizenid, job, max_grade, granted_by) VALUES (?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE max_grade = VALUES(max_grade), granted_by = VALUES(granted_by)
+    ]], { citizenid, job, maxGrade, grantedBy })
+end
+
+--- Révoque la whitelist d'un citoyen sur un job (licenciement).
+function DB.removeJobWhitelist(citizenid, job)
+    MySQL.update('DELETE FROM noxa_job_whitelist WHERE citizenid = ? AND job = ?', { citizenid, job })
+end
+
+-- ---------------------------------------------------------------------
+--  Factures
+-- ---------------------------------------------------------------------
+
+function DB.createInvoice(data)
+    return MySQL.insert.await([[
+        INSERT INTO noxa_invoices (emitter_cid, emitter_name, society, target_cid, amount, label)
+        VALUES (?, ?, ?, ?, ?, ?)
+    ]], { data.emitter_cid, data.emitter_name, data.society, data.target_cid, data.amount, data.label })
+end
+
+function DB.getPendingInvoices(citizenid)
+    return MySQL.query.await(
+        'SELECT * FROM noxa_invoices WHERE target_cid = ? AND status = ? ORDER BY created_at DESC',
+        { citizenid, 'pending' }) or {}
+end
+
+--- Charge une facture en garantissant qu'elle appartient bien au débiteur.
+function DB.getOwnedInvoice(invoiceId, targetCid)
+    return MySQL.single.await(
+        'SELECT * FROM noxa_invoices WHERE id = ? AND target_cid = ? AND status = ?',
+        { invoiceId, targetCid, 'pending' })
+end
+
+function DB.setInvoiceStatus(invoiceId, status)
+    MySQL.update(
+        'UPDATE noxa_invoices SET status = ?, paid_at = NOW() WHERE id = ?',
+        { status, invoiceId })
+end
+
+-- ---------------------------------------------------------------------
+--  Bannissements (audit ; l'état actif vit dans noxa_accounts)
+-- ---------------------------------------------------------------------
+
+function DB.insertBan(data)
+    MySQL.insert([[
+        INSERT INTO noxa_bans (account_id, license, reason, banned_by, expire)
+        VALUES (?, ?, ?, ?, ?)
+    ]], { data.account_id, data.license, data.reason, data.banned_by, data.expire })
+end
+
+function DB.deactivateBans(license)
+    MySQL.update('UPDATE noxa_bans SET active = 0 WHERE license = ?', { license })
+end
+
+--- Applique le ban sur le compte (état autoritaire vérifié à la connexion).
+function DB.setAccountBan(accountId, reason, expire)
+    MySQL.update(
+        'UPDATE noxa_accounts SET banned = 1, ban_reason = ?, ban_expire = ? WHERE id = ?',
+        { reason, expire, accountId })
+end
+
+--- Récupère un compte par license (utilisé par les actions admin offline).
+function DB.getAccountByLicense(license)
+    return MySQL.single.await('SELECT * FROM noxa_accounts WHERE license = ?', { license })
+end
+
 return DB
