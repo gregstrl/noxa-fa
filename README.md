@@ -21,7 +21,36 @@
 | Immobilier (maisons/apparts) | ✅ | Achat, entrée/sortie, verrou, mobilier — 4 paliers, persistance BDD |
 | Météo & Heure serveur | ❌ | Non démarré |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 20h · 2026-06-02
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 22h · 2026-06-02
+
+### Session 22h — QA & optimisation (aucune nouvelle feature)
+
+Correctifs appliqués (chaque fix committé séparément) :
+
+- **fix** — Paiement de facture atomique : `DB.claimInvoice` (UPDATE gardé sur
+  `status='pending'`) élimine le double-paiement possible entre deux events
+  `invoice:pay` concurrents (le payeur était débité deux fois). Rollback à
+  `pending` si le débit échoue.
+- **fix** — Collision d'emplacement personnage : `slot = #existing` réutilisait
+  un slot occupé après suppression d'un perso intermédiaire ; calcul du premier
+  emplacement réellement libre.
+- **fix (perf)** — Boucle de proximité des zones : ne tourne plus à `Wait(0)`
+  chaque frame dès qu'un POI est dans les 60 m ; réactivité 0 ms uniquement à
+  portée d'interaction (2 m), 200 ms en approche, 500 ms au repos.
+- **fix** — Fuite de focus NUI banque : F7 (keymapping actif même focus NUI
+  ouvert) ré-ouvrait la banque sans relâche du focus → curseur bloqué. Verrou
+  `isOpen` + point d'entrée unique `Noxa.Banking.open()` partagé commande/POI.
+- **fix** — Nettoyage code mort : `repeat … until true` trompeur dans la
+  génération du numéro de téléphone.
+
+À surveiller (signalé, non modifié) :
+
+- Inventaire / Items : champ `inventory` réservé, aucune opération d'item encore
+  écrite (pas de `has_item`/`remove_item` à auditer pour l'instant).
+- Double-ouverture focus possible via POI **boutique** (`shop`) ; vecteur
+  marginal (entrée par touche E, input clavier capturé pendant le focus NUI).
+- `transferFee > 0` crédite la caisse `state` : OK tant que la société `state`
+  existe (présente dans les enums) ; à re-vérifier si les enums évoluent.
 
 ---
 
