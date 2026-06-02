@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · NUI 100% custom · oxmysql · Zéro ox_lib visuel
 
-## État actuel — beta-1.2 · 2026-06-02
+## État actuel — beta-1.3 · 2026-06-02
 
 | Système | État | Notes |
 |---|---|---|
