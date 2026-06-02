@@ -1,0 +1,96 @@
+/* =====================================================================
+   NOXA FA — HUD permanent (argent, identité, emploi, besoins vitaux)
+   ===================================================================== */
+
+.hud {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    font-family: var(--font);
+}
+.hud.hidden { display: none; }
+
+/* --- Bloc argent + identité (haut droite) --- */
+.hud-top {
+    position: absolute;
+    top: 22px; right: 22px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+    gap: 10px;
+    animation: slideInRight .4s ease both;
+}
+.hud-money {
+    display: flex;
+    gap: 10px;
+}
+.hud-money-pill {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 15px;
+    background: var(--surface);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: var(--shadow-md);
+}
+.hud-money-ic { width: 22px; height: 22px; display: grid; place-items: center; border-radius: 7px; font-size: 12px; font-weight: 800; }
+.hud-money-pill.cash .hud-money-ic { background: rgba(34,197,94,.18); color: var(--success); }
+.hud-money-pill.bank .hud-money-ic { background: rgba(56,189,248,.18); color: var(--info); }
+.hud-money-val { font-size: 15px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.hud-money-val.flash { animation: moneyFlash .6s ease; }
+@keyframes moneyFlash { 0% { color: var(--accent-2); transform: scale(1.12); } 100% {} }
+
+.hud-id {
+    display: flex; align-items: center; gap: 10px;
+    padding: 7px 14px 7px 8px;
+    background: var(--surface);
+    backdrop-filter: blur(16px); -webkit-backdrop-filter: blur(16px);
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    box-shadow: var(--shadow-md);
+}
+.hud-id-avatar {
+    width: 30px; height: 30px; border-radius: 50%;
+    display: grid; place-items: center;
+    background: var(--accent-grad); color: #fff;
+    font-size: 12px; font-weight: 700;
+}
+.hud-id-text { line-height: 1.2; }
+.hud-id-name { font-size: 13px; font-weight: 700; }
+.hud-id-job { font-size: 11px; color: var(--text-dim); }
+.hud-id-job .duty-dot {
+    display: inline-block; width: 7px; height: 7px; border-radius: 50%;
+    background: var(--text-faint); margin-left: 5px; vertical-align: middle;
+}
+.hud-id-job .duty-dot.on { background: var(--success); box-shadow: 0 0 8px var(--success); }
+
+/* --- Besoins vitaux (bas droite, anneaux) --- */
+.hud-needs {
+    position: absolute;
+    bottom: 28px; right: 26px;
+    display: flex;
+    gap: 14px;
+    animation: fadeIn .5s ease both;
+}
+.need-ring {
+    --val: 100;
+    --col: var(--accent);
+    position: relative;
+    width: 42px; height: 42px;
+    border-radius: 50%;
+    display: grid; place-items: center;
+    background:
+        radial-gradient(closest-side, var(--bg-1) 70%, transparent 71%),
+        conic-gradient(var(--col) calc(var(--val) * 1%), rgba(148,163,184,.15) 0);
+    transition: background .4s ease;
+}
+.need-ring::after {
+    content: attr(data-ic);
+    font-size: 15px;
+    filter: grayscale(.2);
+}
+.need-ring.low { animation: needPulse 1.2s ease-in-out infinite; }
+@keyframes needPulse { 50% { box-shadow: 0 0 14px var(--col); } }

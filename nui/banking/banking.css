@@ -1,0 +1,102 @@
+/* =====================================================================
+   NOXA FA — Interface bancaire (plein écran premium)
+   ===================================================================== */
+
+#banking { animation: fadeIn .3s ease both; }
+
+.bank-app {
+    width: 880px; max-width: 94vw;
+    height: 560px; max-height: 90vh;
+    display: flex;
+    background: var(--surface);
+    backdrop-filter: blur(26px); -webkit-backdrop-filter: blur(26px);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-xl);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    animation: scaleIn .3s cubic-bezier(.2,.9,.3,1) both;
+}
+
+/* Barre latérale */
+.bank-side {
+    width: 240px;
+    flex-shrink: 0;
+    padding: 26px 20px;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, rgba(99,102,241,.12), transparent 40%), var(--bg-1);
+    border-right: 1px solid var(--border);
+}
+.bank-brand { font-family: var(--font-display); font-size: 22px; font-weight: 800; margin-bottom: 4px; }
+.bank-brand span { background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+.bank-holder { font-size: 12.5px; color: var(--text-dim); margin-bottom: 26px; }
+.bank-nav { display: flex; flex-direction: column; gap: 4px; }
+.bank-nav-item {
+    display: flex; align-items: center; gap: 12px;
+    padding: 12px 14px; border-radius: var(--r-md);
+    font-size: 14px; font-weight: 600; color: var(--text-dim);
+    cursor: pointer; transition: all .15s ease;
+}
+.bank-nav-item:hover { background: var(--accent-soft); color: var(--text); }
+.bank-nav-item.active { background: var(--accent-grad); color: #fff; box-shadow: 0 6px 16px rgba(99,102,241,.3); }
+.bank-nav-ic { font-size: 16px; width: 20px; text-align: center; }
+.bank-close {
+    margin-top: auto;
+    padding: 11px; text-align: center;
+    border-radius: var(--r-md);
+    font-size: 13px; font-weight: 600; color: var(--text-faint);
+    cursor: pointer; border: 1px solid var(--border);
+}
+.bank-close:hover { color: var(--error); border-color: rgba(239,68,68,.4); }
+
+/* Contenu principal */
+.bank-main { flex: 1; padding: 30px 32px; overflow-y: auto; }
+
+.bank-balance-card {
+    padding: 26px;
+    border-radius: var(--r-lg);
+    background: var(--accent-grad);
+    box-shadow: 0 14px 40px rgba(99,102,241,.4);
+    margin-bottom: 26px;
+    position: relative; overflow: hidden;
+}
+.bank-balance-card::after {
+    content: ''; position: absolute; top: -40%; right: -10%;
+    width: 240px; height: 240px; border-radius: 50%;
+    background: rgba(255,255,255,.1);
+}
+.bank-balance-label { font-size: 12px; letter-spacing: .12em; text-transform: uppercase; color: rgba(255,255,255,.8); }
+.bank-balance-val { font-family: var(--font-display); font-size: 42px; font-weight: 800; margin-top: 6px; color: #fff; }
+.bank-balance-cash { margin-top: 12px; font-size: 14px; color: rgba(255,255,255,.85); }
+
+.bank-section-title { font-family: var(--font-display); font-size: 16px; font-weight: 700; margin-bottom: 14px; }
+
+.bank-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.bank-action {
+    display: flex; align-items: center; gap: 13px;
+    padding: 16px; border-radius: var(--r-md);
+    background: var(--bg-1); border: 1px solid var(--border);
+    cursor: pointer; transition: all .15s ease;
+}
+.bank-action:hover { border-color: var(--accent); transform: translateY(-2px); }
+.bank-action-ic { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 11px; background: var(--accent-soft); color: var(--accent); font-size: 18px; }
+.bank-action-label { font-size: 14.5px; font-weight: 600; }
+.bank-action-desc { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+
+/* Factures */
+.bank-invoice {
+    display: flex; align-items: center; gap: 14px;
+    padding: 15px 16px; border-radius: var(--r-md);
+    background: var(--bg-1); border: 1px solid var(--border);
+    margin-bottom: 10px;
+}
+.bank-invoice-ic { width: 40px; height: 40px; display: grid; place-items: center; border-radius: 11px; background: rgba(245,158,11,.16); color: var(--warning); font-size: 17px; }
+.bank-invoice-info { flex: 1; min-width: 0; }
+.bank-invoice-label { font-size: 14px; font-weight: 600; }
+.bank-invoice-from { font-size: 12px; color: var(--text-dim); margin-top: 2px; }
+.bank-invoice-amount { font-size: 16px; font-weight: 700; color: var(--error); }
+.bank-invoice-btns { display: flex; gap: 8px; }
+.bank-invoice-btns .btn { padding: 8px 14px; font-size: 13px; }
+
+.bank-empty { text-align: center; padding: 50px 20px; color: var(--text-faint); }
+.bank-empty-ic { font-size: 42px; margin-bottom: 12px; opacity: .5; }

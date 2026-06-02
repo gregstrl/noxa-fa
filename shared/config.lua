@@ -71,6 +71,16 @@ C.Societies = {
     saveInterval = 2 * 60 * 1000,   -- persistance des soldes société : 2 min
 }
 
+-- Besoins vitaux (faim / soif / stress) — décroissance autoritaire serveur
+C.Needs = {
+    decayInterval = 60 * 1000,   -- intervalle de décroissance : 60s
+    hungerRate    = 2,           -- points de faim perdus par cycle
+    thirstRate    = 3,           -- points de soif perdus par cycle (soif plus rapide)
+    stressDecay   = 1,           -- le stress redescend naturellement par cycle
+    damageOnEmpty = 5,           -- dégâts de santé/cycle quand faim OU soif = 0
+    syncInterval  = 15 * 1000,   -- rafraîchissement HUD (santé/armure lues client)
+}
+
 -- Administration
 C.Admin = {
     -- Durées de ban prédéfinies (en secondes ; 0 = permanent)

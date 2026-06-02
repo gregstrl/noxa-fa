@@ -1,28 +1,26 @@
 -- =====================================================================
 --  NOXA FA — Module Emplois (client-side)
---  Interface légère : prise/fin de service + actions patron.
---  Toute la logique est serveur ; le client ne fait qu'émettre l'intention.
+--  Prise/fin de service + menu patron 100 % NUI custom (zéro ox_lib).
+--  Toute la logique est serveur ; le client n'émet que des intentions.
 -- =====================================================================
 
 Noxa = Noxa or {}
+local NUI = Noxa.NUI
 
--- /service : bascule l'état de service (duty).
+-- /service : bascule l'état de service (duty). Keybind natif F6.
 RegisterCommand('service', function()
     TriggerServerEvent('noxa:job:toggleDuty')
 end, false)
-lib.addKeybind({
-    name = 'noxa_duty', description = 'Prendre/quitter le service',
-    defaultKey = 'F6', onReleased = function()
-        TriggerServerEvent('noxa:job:toggleDuty')
-    end,
-})
+RegisterKeyMapping('service', 'Prendre / quitter le service', 'keyboard', 'F6')
 
---- Demande l'ID d'un joueur ciblé via une boîte de saisie ox_lib.
-local function askTargetId(title)
-    local input = lib.inputDialog(title, {
-        { type = 'number', label = 'ID du joueur', required = true, min = 1 },
-    })
-    return input and tonumber(input[1]) or nil
+--- Saisie d'un ID de joueur cible via dialogue NUI, puis exécution.
+local function askTargetId(title, onValue)
+    NUI.input({ title = title, fields = {
+        { name = 'id', label = 'ID du joueur', type = 'number', min = 1, required = true },
+    } }, function(values)
+        local id = values and tonumber(values.id)
+        if id then onValue(id) end
+    end)
 end
 
 -- /boss : menu patron (visible seulement si le joueur a les droits).
@@ -32,38 +30,34 @@ RegisterCommand('boss', function()
         return Noxa.UI.notify('Vous n\'êtes pas responsable d\'une société.', 'error')
     end
 
-    lib.registerContext({
-        id = 'noxa_boss_menu',
+    NUI.openMenu({
         title = ('Gestion — %s'):format(data.job.label or data.job.name),
+        subtitle = 'Actions de direction',
         options = {
-            { title = 'Embaucher', icon = 'user-plus', onSelect = function()
-                local id = askTargetId('Embaucher un joueur')
-                if id then TriggerServerEvent('noxa:job:hire', id) end
-            end },
-            { title = 'Promouvoir / rétrograder', icon = 'arrows-up-down', onSelect = function()
-                local input = lib.inputDialog('Changer de grade', {
-                    { type = 'number', label = 'ID du joueur', required = true, min = 1 },
-                    { type = 'number', label = 'Nouveau grade', required = true, min = 0 },
-                })
-                if input then TriggerServerEvent('noxa:job:setGrade', tonumber(input[1]), tonumber(input[2])) end
-            end },
-            { title = 'Licencier', icon = 'user-minus', onSelect = function()
-                local id = askTargetId('Licencier un joueur')
-                if id then TriggerServerEvent('noxa:job:fire', id) end
-            end },
-            { title = 'Caisse — Déposer', icon = 'arrow-down', onSelect = function()
-                local input = lib.inputDialog('Déposer en caisse', {
-                    { type = 'number', label = 'Montant', required = true, min = 1 },
-                })
-                if input then TriggerServerEvent('noxa:job:society:deposit', tonumber(input[1])) end
-            end },
-            { title = 'Caisse — Retirer', icon = 'arrow-up', onSelect = function()
-                local input = lib.inputDialog('Retirer de la caisse', {
-                    { type = 'number', label = 'Montant', required = true, min = 1 },
-                })
-                if input then TriggerServerEvent('noxa:job:society:withdraw', tonumber(input[1])) end
-            end },
+            { id = 'hire',     label = 'Embaucher',                  description = 'Recruter le joueur le plus proche par ID', icon = '➕' },
+            { id = 'grade',    label = 'Promouvoir / rétrograder',   description = 'Changer le grade d\'un employé',           icon = '⇅' },
+            { id = 'fire',     label = 'Licencier',                  description = 'Renvoyer un employé',                      icon = '➖', danger = true },
+            { id = 'deposit',  label = 'Caisse — Déposer',           description = 'Verser de votre banque vers la société',   icon = '⬇' },
+            { id = 'withdraw', label = 'Caisse — Retirer',           description = 'Retirer de la caisse vers votre banque',   icon = '⬆' },
         },
-    })
-    lib.showContext('noxa_boss_menu')
+    }, function(option)
+        if option == 'hire' then
+            askTargetId('Embaucher un joueur', function(id) TriggerServerEvent('noxa:job:hire', id) end)
+        elseif option == 'fire' then
+            askTargetId('Licencier un joueur', function(id) TriggerServerEvent('noxa:job:fire', id) end)
+        elseif option == 'grade' then
+            NUI.input({ title = 'Changer de grade', fields = {
+                { name = 'id', label = 'ID du joueur', type = 'number', min = 1, required = true },
+                { name = 'grade', label = 'Nouveau grade', type = 'number', min = 0, required = true },
+            } }, function(v)
+                if v then TriggerServerEvent('noxa:job:setGrade', tonumber(v.id), tonumber(v.grade)) end
+            end)
+        elseif option == 'deposit' or option == 'withdraw' then
+            NUI.input({ title = option == 'deposit' and 'Déposer en caisse' or 'Retirer de la caisse', fields = {
+                { name = 'amount', label = 'Montant', type = 'number', min = 1, required = true },
+            } }, function(v)
+                if v then TriggerServerEvent('noxa:job:society:' .. option, tonumber(v.amount)) end
+            end)
+        end
+    end)
 end, false)

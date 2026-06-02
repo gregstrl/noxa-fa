@@ -1,76 +1,75 @@
 -- =====================================================================
 --  NOXA FA — Module Banque (client-side)
---  Menus ox_lib pour dépôt/retrait/virement + consultation des factures.
---  Aucune valeur de solde n'est de confiance côté client : l'affichage
---  provient du statebag répliqué par le serveur (Noxa.GetPlayerData).
+--  Pilote l'interface bancaire NUI custom (zéro ox_lib).
+--  Aucune valeur de solde n'est de confiance : l'affichage provient du
+--  statebag répliqué serveur (Noxa.GetPlayerData).
 -- =====================================================================
 
 Noxa = Noxa or {}
+local NUI = Noxa.NUI
 
-local pendingInvoices = {}
+-- /banque : ouvre l'interface bancaire.
+RegisterCommand('banque', function()
+    local data = Noxa.GetPlayerData and Noxa.GetPlayerData()
+    if not data then return end
+    NUI.setFocus(true)
+    NUI.send('banking', 'open', {
+        name      = data.name,
+        citizenid = data.citizenid,
+        cash      = data.cash or 0,
+        bank      = data.bank or 0,
+    })
+end, false)
+RegisterKeyMapping('banque', 'Ouvrir la banque', 'keyboard', 'F7')
+
+-- Synchronise les soldes affichés quand l'état joueur change (statebag).
+AddEventHandler('noxa:client:playerDataUpdated', function(data)
+    NUI.send('banking', 'sync', { cash = data.cash or 0, bank = data.bank or 0 })
+end)
 
 -- Réception de la liste des factures depuis le serveur.
 RegisterNetEvent('noxa:bank:invoice:setList', function(list)
-    pendingInvoices = list or {}
-    local options = {}
-    if #pendingInvoices == 0 then
-        options[1] = { title = 'Aucune facture en attente', disabled = true }
-    else
-        for _, inv in ipairs(pendingInvoices) do
-            options[#options + 1] = {
-                title = ('%s — %d $'):format(inv.label, inv.amount),
-                description = ('Émetteur : %s'):format(inv.from),
-                metadata = { { label = 'Date', value = inv.date } },
-                onSelect = function()
-                    local ok = lib.alertDialog({
-                        header = inv.label,
-                        content = ('Payer **%d $** à %s ?'):format(inv.amount, inv.from),
-                        centered = true, cancel = true,
-                    })
-                    if ok == 'confirm' then
-                        TriggerServerEvent('noxa:bank:invoice:pay', inv.id)
-                    else
-                        TriggerServerEvent('noxa:bank:invoice:refuse', inv.id)
-                    end
-                end,
-            }
-        end
-    end
-    lib.registerContext({ id = 'noxa_invoices', title = 'Mes factures', options = options })
-    lib.showContext('noxa_invoices')
+    NUI.send('banking', 'invoices', { list = list or {} })
 end)
 
--- /banque : menu bancaire principal.
-RegisterCommand('banque', function()
-    local data = Noxa.GetPlayerData and Noxa.GetPlayerData()
-    lib.registerContext({
-        id = 'noxa_bank',
-        title = 'Banque Noxa',
-        options = {
-            { title = 'Solde', icon = 'wallet', disabled = true,
-              description = data and ('Banque : %d $  |  Espèces : %d $'):format(data.bank or 0, data.cash or 0) or '—' },
-            { title = 'Déposer', icon = 'arrow-down', onSelect = function()
-                local input = lib.inputDialog('Dépôt', { { type = 'number', label = 'Montant', required = true, min = 1 } })
-                if input then TriggerServerEvent('noxa:bank:deposit', tonumber(input[1])) end
-            end },
-            { title = 'Retirer', icon = 'arrow-up', onSelect = function()
-                local input = lib.inputDialog('Retrait', { { type = 'number', label = 'Montant', required = true, min = 1 } })
-                if input then TriggerServerEvent('noxa:bank:withdraw', tonumber(input[1])) end
-            end },
-            { title = 'Virement', icon = 'paper-plane', onSelect = function()
-                local input = lib.inputDialog('Virement bancaire', {
-                    { type = 'input',  label = 'ID citoyen destinataire (NXxxxxxx)', required = true },
-                    { type = 'number', label = 'Montant', required = true, min = 1 },
-                })
-                if input then TriggerServerEvent('noxa:bank:transfer', input[1], tonumber(input[2])) end
-            end },
-            { title = 'Mes factures', icon = 'file-invoice-dollar', onSelect = function()
-                TriggerServerEvent('noxa:bank:invoice:list')
-            end },
-        },
-    })
-    lib.showContext('noxa_bank')
-end, false)
+-- ---------------------------------------------------------------------
+--  Callbacks NUI -> serveur
+-- ---------------------------------------------------------------------
+
+RegisterNUICallback('bankClose', function(_, cb) NUI.setFocus(false); cb('ok') end)
+
+RegisterNUICallback('bankDeposit', function(body, cb)
+    local amount = tonumber(body.amount)
+    if amount then TriggerServerEvent('noxa:bank:deposit', amount) end
+    cb('ok')
+end)
+
+RegisterNUICallback('bankWithdraw', function(body, cb)
+    local amount = tonumber(body.amount)
+    if amount then TriggerServerEvent('noxa:bank:withdraw', amount) end
+    cb('ok')
+end)
+
+RegisterNUICallback('bankTransfer', function(body, cb)
+    local amount = tonumber(body.amount)
+    if body.target and amount then TriggerServerEvent('noxa:bank:transfer', body.target, amount) end
+    cb('ok')
+end)
+
+RegisterNUICallback('bankInvoices', function(_, cb)
+    TriggerServerEvent('noxa:bank:invoice:list')
+    cb('ok')
+end)
+
+RegisterNUICallback('bankInvoicePay', function(body, cb)
+    if body.id then TriggerServerEvent('noxa:bank:invoice:pay', body.id) end
+    cb('ok')
+end)
+
+RegisterNUICallback('bankInvoiceRefuse', function(body, cb)
+    if body.id then TriggerServerEvent('noxa:bank:invoice:refuse', body.id) end
+    cb('ok')
+end)
 
 -- /facturer [id] [montant] [libellé...] : émission rapide pour les pros.
 RegisterCommand('facturer', function(_, args)

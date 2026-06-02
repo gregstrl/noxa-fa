@@ -1,0 +1,99 @@
+/* =====================================================================
+   NOXA FA — Menus, dialogues de saisie & confirmations (custom)
+   Remplace lib.registerContext / lib.inputDialog / lib.alertDialog.
+   ===================================================================== */
+
+#menu-layer { animation: fadeIn .2s ease both; }
+
+/* --- Conteneur générique d'une carte modale --- */
+.modal-card {
+    position: relative;
+    width: 420px;
+    max-width: 90vw;
+    max-height: 82vh;
+    display: flex;
+    flex-direction: column;
+    background: var(--surface);
+    backdrop-filter: blur(22px);
+    -webkit-backdrop-filter: blur(22px);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
+    overflow: hidden;
+    animation: scaleIn .26s cubic-bezier(.2,.9,.3,1) both;
+}
+
+.modal-head {
+    padding: 20px 22px 16px;
+    border-bottom: 1px solid var(--border);
+    background: var(--accent-grad-soft);
+}
+.modal-title {
+    font-family: var(--font-display);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -.01em;
+}
+.modal-sub { margin-top: 4px; font-size: 13px; color: var(--text-dim); }
+
+.modal-body { padding: 14px; overflow-y: auto; }
+.modal-foot {
+    display: flex;
+    gap: 10px;
+    padding: 14px 18px 18px;
+    border-top: 1px solid var(--border);
+}
+.modal-foot .btn { flex: 1; }
+
+/* --- Options de menu contextuel --- */
+.menu-opt {
+    display: flex;
+    align-items: center;
+    gap: 13px;
+    padding: 13px 14px;
+    border-radius: var(--r-md);
+    cursor: pointer;
+    transition: background .14s ease, transform .12s ease;
+}
+.menu-opt + .menu-opt { margin-top: 4px; }
+.menu-opt:hover { background: var(--accent-soft); transform: translateX(3px); }
+.menu-opt.disabled { opacity: .45; cursor: default; pointer-events: none; }
+.menu-opt.danger:hover { background: rgba(239,68,68,.14); }
+
+.menu-opt-icon {
+    flex-shrink: 0;
+    width: 38px;
+    height: 38px;
+    display: grid;
+    place-items: center;
+    border-radius: 11px;
+    background: var(--bg-2);
+    font-size: 16px;
+}
+.menu-opt.danger .menu-opt-icon { color: var(--error); }
+.menu-opt-text { flex: 1; min-width: 0; }
+.menu-opt-label { font-size: 14.5px; font-weight: 600; }
+.menu-opt-desc { font-size: 12.5px; color: var(--text-dim); margin-top: 2px; }
+.menu-opt-badge {
+    flex-shrink: 0;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    background: var(--accent-soft);
+    padding: 4px 10px;
+    border-radius: 999px;
+}
+
+/* --- Champs de saisie (dialogues input) --- */
+.modal-field { margin-bottom: 16px; }
+.modal-field:last-child { margin-bottom: 0; }
+
+/* --- Confirmation --- */
+.confirm-msg {
+    padding: 6px 6px 4px;
+    font-size: 14.5px;
+    line-height: 1.55;
+    color: var(--text-soft);
+    text-align: center;
+}
+.confirm-msg strong { color: var(--text); }

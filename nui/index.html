@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Noxa FA</title>
+
+    <!-- Typographie premium (Inter + Poppins) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Poppins:wght@500;600;700;800&display=swap" rel="stylesheet" />
+
+    <!-- Thème global + reset -->
+    <link rel="stylesheet" href="shell.css" />
+    <!-- Modules d'interface (chacun dans son dossier dédié) -->
+    <link rel="stylesheet" href="notify/notify.css" />
+    <link rel="stylesheet" href="hud/hud.css" />
+    <link rel="stylesheet" href="menus/menus.css" />
+    <link rel="stylesheet" href="characters/characters.css" />
+    <link rel="stylesheet" href="banking/banking.css" />
+</head>
+<body>
+    <!-- Couche notifications (toasts) -->
+    <div id="notify-stack" class="notify-stack"></div>
+
+    <!-- HUD permanent -->
+    <div id="hud" class="hud hidden"></div>
+
+    <!-- Couche modale (menus contextuels, dialogues, confirmations) -->
+    <div id="menu-layer" class="layer hidden"></div>
+
+    <!-- Plein écran : sélection / création de personnage -->
+    <div id="characters" class="fullscreen hidden"></div>
+
+    <!-- Plein écran : banque -->
+    <div id="banking" class="fullscreen hidden"></div>
+
+    <!-- Routeur NUI + helpers (chargé en premier) -->
+    <script src="shell.js"></script>
+    <!-- Modules d'interface -->
+    <script src="notify/notify.js"></script>
+    <script src="hud/hud.js"></script>
+    <script src="menus/menus.js"></script>
+    <script src="characters/characters.js"></script>
+    <script src="banking/banking.js"></script>
+</body>
+</html>

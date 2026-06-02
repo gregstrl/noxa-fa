@@ -1,0 +1,156 @@
+/* =====================================================================
+   NOXA FA — Thème global NUI (variables, reset, primitives premium dark)
+   Source unique du design system : couleurs, ombres, rayons, animations.
+   Toute interface réutilise ces variables — aucune couleur hardcodée ailleurs.
+   ===================================================================== */
+
+:root {
+    /* Fonds sombres */
+    --bg-0: #0a0a0f;
+    --bg-1: #111827;
+    --bg-2: #1f2937;
+    --bg-3: #2a3441;
+    --surface: rgba(17, 24, 39, 0.85);
+    --surface-glass: rgba(31, 41, 55, 0.55);
+
+    /* Accents signature Noxa (indigo -> violet) */
+    --accent: #6366f1;
+    --accent-2: #8b5cf6;
+    --accent-soft: rgba(99, 102, 241, 0.16);
+    --accent-grad: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%);
+    --accent-grad-soft: linear-gradient(135deg, rgba(99,102,241,0.18), rgba(139,92,246,0.18));
+
+    /* États */
+    --success: #22c55e;
+    --error: #ef4444;
+    --warning: #f59e0b;
+    --info: #38bdf8;
+
+    /* Texte */
+    --text: #f1f5f9;
+    --text-soft: #cbd5e1;
+    --text-dim: #94a3b8;
+    --text-faint: #64748b;
+
+    /* Bordures & ombres */
+    --border: rgba(148, 163, 184, 0.12);
+    --border-strong: rgba(148, 163, 184, 0.22);
+    --shadow-lg: 0 24px 64px rgba(0, 0, 0, 0.55);
+    --shadow-md: 0 12px 32px rgba(0, 0, 0, 0.45);
+    --glow: 0 0 24px rgba(99, 102, 241, 0.45);
+
+    /* Rayons */
+    --r-sm: 8px;
+    --r-md: 14px;
+    --r-lg: 20px;
+    --r-xl: 28px;
+
+    --font: 'Inter', system-ui, sans-serif;
+    --font-display: 'Poppins', 'Inter', sans-serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: transparent;       /* NUI : fond transparent par défaut */
+    font-family: var(--font);
+    color: var(--text);
+    user-select: none;
+    -webkit-font-smoothing: antialiased;
+}
+
+.hidden { display: none !important; }
+
+/* Couches d'affichage --------------------------------------------------- */
+.layer, .fullscreen {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 50;
+}
+.fullscreen {
+    background: radial-gradient(120% 120% at 50% 0%, rgba(99,102,241,0.10), transparent 55%), var(--bg-0);
+    z-index: 40;
+}
+.layer { z-index: 60; }
+
+/* Voile d'arrière-plan pour les modales */
+.scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 7, 12, 0.55);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+}
+
+/* Primitives réutilisables --------------------------------------------- */
+.btn {
+    font-family: var(--font);
+    font-weight: 600;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-sm);
+    padding: 11px 18px;
+    cursor: pointer;
+    transition: transform .12s ease, background .18s ease, box-shadow .18s ease, border-color .18s ease;
+}
+.btn:hover { transform: translateY(-1px); border-color: var(--accent); }
+.btn:active { transform: translateY(0); }
+.btn-primary {
+    background: var(--accent-grad);
+    border: none;
+    box-shadow: 0 8px 20px rgba(99, 102, 241, 0.35);
+}
+.btn-primary:hover { box-shadow: var(--glow); }
+.btn-ghost { background: transparent; border-color: var(--border); color: var(--text-dim); }
+.btn-danger { background: rgba(239, 68, 68, 0.15); border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+.btn-danger:hover { background: rgba(239, 68, 68, 0.28); border-color: var(--error); }
+.btn:disabled { opacity: .4; cursor: not-allowed; transform: none; }
+
+.field-label {
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    color: var(--text-dim);
+    margin-bottom: 7px;
+}
+.field-input {
+    width: 100%;
+    font-family: var(--font);
+    font-size: 15px;
+    color: var(--text);
+    background: var(--bg-0);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-sm);
+    padding: 12px 14px;
+    outline: none;
+    transition: border-color .16s ease, box-shadow .16s ease;
+}
+.field-input::placeholder { color: var(--text-faint); }
+.field-input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+select.field-input { cursor: pointer; }
+
+/* Scrollbar custom (jamais le rendu navigateur par défaut) */
+::-webkit-scrollbar { width: 8px; height: 8px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 8px; }
+::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+/* Animations partagées -------------------------------------------------- */
+@keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+@keyframes scaleIn { from { opacity: 0; transform: scale(.94) translateY(8px); } to { opacity: 1; transform: scale(1) translateY(0); } }
+@keyframes slideInRight { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+@keyframes slideOutRight { from { opacity: 1; transform: translateX(0); } to { opacity: 0; transform: translateX(40px); } }
+@keyframes popIn { 0% { opacity: 0; transform: scale(.8); } 60% { transform: scale(1.03); } 100% { opacity: 1; transform: scale(1); } }
+
+.anim-fade { animation: fadeIn .25s ease both; }
+.anim-scale { animation: scaleIn .28s cubic-bezier(.2,.9,.3,1) both; }

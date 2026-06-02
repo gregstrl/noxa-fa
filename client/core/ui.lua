@@ -1,23 +1,22 @@
 -- =====================================================================
 --  NOXA FA — Couche UI client (notifications & annonces)
---  Centralise le retour visuel. S'appuie sur ox_lib (lib.notify).
---  Le serveur déclenche ces events ; le client ne fait qu'afficher.
+--  100 % NUI custom (zéro ox_lib). Le serveur déclenche ; le client affiche.
 -- =====================================================================
 
 Noxa = Noxa or {}
 Noxa.UI = {}
 
-local types = { success = 'success', error = 'error', inform = 'inform', warning = 'warning' }
+local validTypes = { success = true, error = true, inform = true, warning = true }
 
---- Notification standard.
+--- Notification standard (toast NUI custom).
 ---@param msg string
 ---@param kind? string success|error|inform|warning
-function Noxa.UI.notify(msg, kind)
-    lib.notify({
-        title       = 'Noxa FA',
-        description = msg,
-        type        = types[kind] or 'inform',
-        position    = 'top',
+---@param title? string
+function Noxa.UI.notify(msg, kind, title)
+    Noxa.NUI.send('notify', 'show', {
+        title = title,
+        msg   = msg,
+        type  = validTypes[kind] and kind or 'inform',
     })
 end
 
@@ -27,15 +26,10 @@ RegisterNetEvent('noxa:notify', function(msg, kind)
     Noxa.UI.notify(msg, kind)
 end)
 
--- Annonce serveur (broadcast staff) — affichée plus visiblement.
+-- Annonce serveur (broadcast staff) — toast « announce » plus visible.
 RegisterNetEvent('noxa:announce', function(msg)
     if type(msg) ~= 'string' then return end
-    lib.notify({
-        title       = 'Annonce',
-        description = msg,
-        type        = 'inform',
-        position    = 'top',
-        duration    = 8000,
-        icon        = 'bullhorn',
+    Noxa.NUI.send('notify', 'show', {
+        title = 'Annonce', msg = msg, type = 'announce', duration = 8000,
     })
 end)

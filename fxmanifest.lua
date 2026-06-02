@@ -4,12 +4,12 @@ lua54 'yes'
 
 name 'noxa-core'
 author 'Noxa FA'
-description 'Noxa FA — Base RP FiveM moderne, modulaire et sécurisée'
-version '0.2.0'
+description 'Noxa FA — Base RP FiveM moderne, modulaire et sécurisée (UI 100% custom)'
+version '0.3.0'
 
--- Dépendances : ox_lib (utils/UI) + oxmysql (base de données)
+-- Dépendances : UNIQUEMENT oxmysql (base de données).
+-- ZÉRO ox_lib : toute l'interface est 100 % NUI custom (nui/).
 dependencies {
-    'ox_lib',
     'oxmysql',
 }
 
@@ -17,7 +17,6 @@ dependencies {
 --  SHARED  — chargé client + serveur
 -- =====================================================================
 shared_scripts {
-    '@ox_lib/init.lua',
     'shared/config.lua',
     'shared/enums.lua',
     'shared/utils.lua',
@@ -39,24 +38,44 @@ server_scripts {
     'server/modules/jobs/server.lua',
     'server/modules/banking/server.lua',
     'server/modules/characters/server.lua',
+    'server/modules/needs/server.lua',
     'server/modules/admin/server.lua',
     'server/main.lua',
 }
 
 -- =====================================================================
---  CLIENT
+--  CLIENT  — nui.lua (pont) chargé en premier, avant toute UI
 -- =====================================================================
 client_scripts {
+    'client/core/nui.lua',
     'client/core/spawn.lua',
     'client/core/ui.lua',
     'client/modules/characters/client.lua',
+    'client/modules/hud/client.lua',
     'client/modules/jobs/client.lua',
     'client/modules/banking/client.lua',
     'client/modules/admin/client.lua',
     'client/main.lua',
 }
 
--- Fichiers servis au client (locales, etc.)
+-- =====================================================================
+--  NUI  — interface 100 % custom (HTML/CSS/JS natif moderne)
+-- =====================================================================
+ui_page 'nui/index.html'
+
 files {
     'locales/*.json',
+    'nui/index.html',
+    'nui/shell.css',
+    'nui/shell.js',
+    'nui/notify/notify.css',
+    'nui/notify/notify.js',
+    'nui/hud/hud.css',
+    'nui/hud/hud.js',
+    'nui/menus/menus.css',
+    'nui/menus/menus.js',
+    'nui/characters/characters.css',
+    'nui/characters/characters.js',
+    'nui/banking/banking.css',
+    'nui/banking/banking.js',
 }
