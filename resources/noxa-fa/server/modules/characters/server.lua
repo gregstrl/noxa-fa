@@ -97,8 +97,15 @@ S.onNet('noxa:char:create', function(src, _, payload)
     local gender = (tonumber(payload.gender) == 1) and 1 or 0
     local dob = type(payload.dob) == 'string' and payload.dob:match('^%d%d%d%d%-%d%d%-%d%d$') or '2000-01-01'
 
+    -- Premier emplacement libre : #existing réutilise un slot déjà pris si un
+    -- personnage du milieu a été supprimé (slots 0,2 -> #existing=2 = collision).
+    local used = {}
+    for _, c in ipairs(existing) do used[c.slot] = true end
+    local slot = 0
+    while used[slot] do slot = slot + 1 end
+
     local row = DB.createCharacter(acc.id, {
-        slot        = #existing,
+        slot        = slot,
         citizenid   = uniqueCitizenId(),
         firstname   = firstname,
         lastname    = lastname,
