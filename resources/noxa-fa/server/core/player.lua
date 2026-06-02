@@ -106,7 +106,24 @@ function Player:addMoney(account, amount, reason)
         return false
     end
     self:onMoneyChanged(account, E.TxType.ADD, amount, reason)
+    -- Plafond d'espèces sur soi : l'excédent est viré automatiquement en banque.
+    if account == E.Accounts.CASH then self:enforceCashCap() end
     return true
+end
+
+--- Applique le plafond d'espèces (anti-thésaurisation de liquide non tracé).
+--- Au-delà du plafond DUR, l'excédent est ramené au seuil confort en banque.
+function Player:enforceCashCap()
+    local cap = CFG.Economy.CashCap
+    if not cap or self.cash <= cap.hard then return end
+    local excess = self.cash - cap.soft
+    self.cash = self.cash - excess
+    self.bank = self.bank + excess
+    -- Journalise les DEUX mouvements (cohérence d'audit) + resync.
+    self:onMoneyChanged(E.Accounts.CASH, E.TxType.REMOVE, excess, 'cashcap:auto')
+    self:onMoneyChanged(E.Accounts.BANK, E.TxType.ADD, excess, 'cashcap:auto')
+    TriggerClientEvent('noxa:notify', self.source,
+        ('Excédent d\'espèces déposé en banque : %s'):format(U.money(excess)), 'inform')
 end
 
 --- Retire de l'argent si le solde est suffisant. Validé, journalisé.
@@ -141,6 +158,15 @@ function Player:onMoneyChanged(account, txType, amount, reason)
     if amount >= CFG.Economy.logThreshold then
         DB.logTransaction(self.citizenid, account, txType, amount, balance, reason)
     end
+    -- Flux économique temps réel vers la NUI (toast +/− contextualisé).
+    -- Purement informatif : aucune valeur de confiance, le solde fait foi côté serveur.
+    TriggerClientEvent('noxa:economy:tx', self.source, {
+        account = account,
+        type    = txType,
+        amount  = amount,
+        reason  = reason,
+        balance = balance,
+    })
     self:syncState()
 end
 

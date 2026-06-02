@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · NUI 100% custom · oxmysql · Zéro ox_lib visuel
 
-## État actuel — beta-1.1 · 2026-06-02
+## État actuel — beta-1.2 · 2026-06-02
 
 | Système | État | Notes |
 |---|---|---|
@@ -9,8 +9,8 @@
 | Spawn & Connexion | ✅ | Deferral (vérif ban), spawn contrôlé serveur |
 | Création personnage NUI | ✅ | Sélection/création plein écran custom |
 | Inventaire / Items | ❌ | Champ `inventory` réservé, système à venir |
-| Économie & Prix | ✅ | Cash/banque bornés, virements, sociétés, boutique épicerie |
-| Véhicules (concessions, garages) | 🟡 | Table `noxa_vehicles` + carburant persistant ; garages/concession à venir |
+| Économie & Prix | ✅ | Doctrine salaires (bandes/h justifiées), TVA, taxe virement, loyers, entretien, amendes, plafond cash, catalogue véhicules + flux NUI |
+| Véhicules (concessions, garages) | 🟡 | Catalogue concession F→S (prix justifiés/h de jeu) + carburant persistant ; spawn/garage à venir |
 | Menu admin NUI (F10) | 🟡 | Commandes staff complètes ; panneau NUI F10 à venir |
 | Panel gestion serveur | ❌ | Non démarré |
 | Anti-cheat & Panel staff | 🟡 | Rate-limit, flag/violations, autoban, logs BDD ; panneau à venir |
@@ -21,36 +21,52 @@
 | Immobilier (maisons/apparts) | ✅ | Achat, entrée/sortie, verrou, mobilier — 4 paliers, persistance BDD |
 | Météo & Heure serveur | ❌ | Non démarré |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 22h · 2026-06-02
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 00h économie · 2026-06-02
 
-### Session 22h — QA & optimisation (aucune nouvelle feature)
+### Session 00h — Économie : conception, implémentation & équilibrage
 
-Correctifs appliqués (chaque fix committé séparément) :
+Système économique complet, **chaque chiffre justifié en commentaire**.
+Doctrine centralisée dans `shared/economy/` (source unique, lue serveur).
 
-- **fix** — Paiement de facture atomique : `DB.claimInvoice` (UPDATE gardé sur
-  `status='pending'`) élimine le double-paiement possible entre deux events
-  `invoice:pay` concurrents (le payeur était débité deux fois). Rollback à
-  `pending` si le débit échoue.
-- **fix** — Collision d'emplacement personnage : `slot = #existing` réutilisait
-  un slot occupé après suppression d'un perso intermédiaire ; calcul du premier
-  emplacement réellement libre.
-- **fix (perf)** — Boucle de proximité des zones : ne tourne plus à `Wait(0)`
-  chaque frame dès qu'un POI est dans les 60 m ; réactivité 0 ms uniquement à
-  portée d'interaction (2 m), 200 ms en approche, 500 ms au repos.
-- **fix** — Fuite de focus NUI banque : F7 (keymapping actif même focus NUI
-  ouvert) ré-ouvrait la banque sans relâche du focus → curseur bloqué. Verrou
-  `isOpen` + point d'entrée unique `Noxa.Banking.open()` partagé commande/POI.
-- **fix** — Nettoyage code mort : `repeat … until true` trompeur dans la
-  génération du numéro de téléphone.
+**Doctrine des salaires** (`shared/economy/wages.lua`)
+- Bandes horaires cibles : civil **500–1500 $/h**, légal qualifié **2000–4000 $/h**,
+  illégal **4000–10000 $/h**. Dole citoyen volontairement sous-bande (~100 $/h).
+- Conversion automatique « par cycle de paie » ⟷ « par heure » dérivée de
+  `Jobs.payInterval` (2 cycles/h) — change l'intervalle, les bornes suivent.
+- `Eco.audit()` (debug) compare enums.lua à la grille de référence et signale
+  toute dérive : aucun salaire ne glisse sans justification.
+
+**Catalogue véhicules** (`shared/economy/vehicles.lua`)
+- 7 classes **F→S** aux bornes imposées (F 5–20k … S 2–8M$), 32 modèles tarifés.
+- **Invariant tenu** : une hypercar (S) = 250–1000 h de jeu légitime
+  (vérifié au boot : S d'entrée 2,2M$ ≈ 275 h au revenu haut de 8000 $/h).
+- Prix justifiés par durée d'acquisition (revenu médian 2500 $/h pour F→C,
+  revenu haut 8000 $/h pour B→S). `Eco.checkVehicles()` borne chaque prix à sa classe.
+
+**Anti-inflation — puits monétaires** (`shared/economy/antiinflation.lua`)
+- **TVA 5 %** sur consommables (épicerie, carburant) → Trésor Public.
+- **Taxe de virement 3 %** (câblée sur `Banking.transferFee`) → limite blanchiment.
+- **Surtaxe luxe 7 %** sur les achats de concession.
+- **Loyers** ≈ 0,5 %/cycle de la valeur du bien · **Entretien** 150 $/véhicule/cycle
+  (cycle fiscal = 60 min, débité aux propriétaires en ligne, banque puis espèces).
+- **Amendes** : barème police borné (250 $ → 5000 $, plafond 25k) versé au Trésor.
+- **Plafond d'espèces** : 100k$ max sur soi, excédent viré auto en banque (argent
+  tracé, butin de braquage futur plafonné).
+
+**Serveur** (`server/modules/economy/server.lua`)
+- `chargeWithTax`, `Fine`, `GetVehiclePrice/Total` exportés (interop inter-ressources).
+- Thread d'entretien (loyers + maintenance) ; toutes les recettes au Trésor Public.
+
+**NUI** (`nui/economy/`) — flux de transactions temps réel : chaque mouvement
+d'argent (salaire, achat, amende, virement…) affiche un toast **+/−** contextualisé
+sous le HUD argent, piloté par l'événement serveur `noxa:economy:tx`.
 
 À surveiller (signalé, non modifié) :
 
-- Inventaire / Items : champ `inventory` réservé, aucune opération d'item encore
-  écrite (pas de `has_item`/`remove_item` à auditer pour l'instant).
-- Double-ouverture focus possible via POI **boutique** (`shop`) ; vecteur
-  marginal (entrée par touche E, input clavier capturé pendant le focus NUI).
-- `transferFee > 0` crédite la caisse `state` : OK tant que la société `state`
-  existe (présente dans les enums) ; à re-vérifier si les enums évoluent.
+- Concession : catalogue & prix prêts (autoritaires) ; le **spawn/garage** des
+  véhicules achetés reste à implémenter (achat de bout-en-bout en attente).
+- Entretien : un débiteur insolvable est **alerté, jamais endetté** (pas de solde
+  négatif) ; un futur système de saisie pourra s'appuyer sur cet état.
 
 ---
 
@@ -75,6 +91,7 @@ noxa-fa/
 ├── fxmanifest.lua          # Déclaration de la ressource & ordre de chargement
 ├── sql/install.sql         # ⭐ FICHIER UNIQUE à importer (tout-en-un, idempotent)
 ├── shared/                 # config.lua (POI, shops, immobilier, phone) · enums · utils
+│   └── economy/            # wages (doctrine salaires) · vehicles (catalogue) · antiinflation
 ├── server/
 │   ├── core/               # db · security · player · manager
 │   └── modules/
@@ -85,13 +102,13 @@ noxa-fa/
 ├── client/
 │   ├── core/               # nui (pont) · spawn · ui
 │   └── modules/
-│       ├── characters/ hud/ jobs/ banking/ admin/
+│       ├── characters/ hud/ economy/ jobs/ banking/ admin/
 │       ├── world/          # blips · zones (proximité + prompt) · shop · fuel
 │       ├── properties/     # portes interactives, intérieurs, mobilier
 │       └── phone/          # ouverture F1, pont NUI
 └── nui/                    # Interface 100 % custom (dossier par module)
     ├── shell.css/js        # Thème (design system) + routeur NUI + helpers
-    ├── notify/ menus/ hud/ characters/ banking/
+    ├── notify/ menus/ hud/ economy/ characters/ banking/
     ├── world/              # prompt d'interaction + jauge carburant
     ├── shop/               # boutique épicerie premium
     └── phone/              # smartphone (accueil + 6 applications)
@@ -122,7 +139,7 @@ noxa-fa/
 - `/kick` `/ban` `/unban` `/heal` `/revive` `/goto` `/bring` `/announce`
 - `/setmoney` `/job` `/setjobwl` `/setgroup`
 
-## Nouveautés session (beta-1.1)
+## Historique — apports beta-1.1
 
 - **Carte & POI** : 13 catégories (bank, atm×16, grocery, clothing, barber,
   hospital, police, garage, fuel×10, mairie, fishing, hunting, casino), blips

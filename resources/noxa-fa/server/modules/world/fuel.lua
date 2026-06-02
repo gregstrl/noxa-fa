@@ -20,7 +20,8 @@ S.onNet('noxa:fuel:request', function(src, ply, plate, units)
     end
 
     local cost = units * FUEL.pricePerUnit
-    if not ply:removeMoney(E.Accounts.CASH, cost, 'fuel') then
+    -- Débit espèces + TVA reversée au Trésor Public (puits anti-inflation).
+    if not Noxa.Economy.chargeWithTax(src, E.Accounts.CASH, cost, 'fuel') then
         return TriggerClientEvent('noxa:notify', src, 'Espèces insuffisantes pour le plein.', 'error')
     end
 

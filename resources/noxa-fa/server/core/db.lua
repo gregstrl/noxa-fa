@@ -255,6 +255,13 @@ function DB.refuelVehicle(plate, units)
         { units, plate })
 end
 
+--- Nombre de véhicules possédés par un citoyen (cycle d'entretien).
+---@return integer
+function DB.countOwnedVehicles(cid)
+    local n = MySQL.scalar.await('SELECT COUNT(*) FROM noxa_vehicles WHERE owner_cid = ?', { cid })
+    return tonumber(n) or 0
+end
+
 -- ---------------------------------------------------------------------
 --  Immobilier (maisons / appartements)
 -- ---------------------------------------------------------------------
@@ -273,6 +280,12 @@ end
 --- Charge tous les biens (appelé une fois au démarrage).
 function DB.getProperties()
     return MySQL.query.await('SELECT * FROM noxa_properties') or {}
+end
+
+--- Paliers des biens possédés par un citoyen (cycle d'entretien : loyers).
+---@return table[] lignes { tier }
+function DB.getOwnedPropertyTiers(cid)
+    return MySQL.query.await('SELECT tier FROM noxa_properties WHERE owner_cid = ?', { cid }) or {}
 end
 
 --- Achat atomique : n'attribue le bien que s'il est encore libre.

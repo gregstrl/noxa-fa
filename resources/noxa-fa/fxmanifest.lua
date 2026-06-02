@@ -18,6 +18,11 @@ dependencies {
 -- =====================================================================
 shared_scripts {
     'shared/config.lua',
+    -- Économie : doctrine salariale, catalogue véhicules, anti-inflation.
+    -- Chargée APRÈS config (étend C.Economy/C.Banking) et AVANT enums (audit).
+    'shared/economy/wages.lua',
+    'shared/economy/vehicles.lua',
+    'shared/economy/antiinflation.lua',
     'shared/enums.lua',
     'shared/utils.lua',
 }
@@ -57,6 +62,7 @@ client_scripts {
     'client/core/ui.lua',
     'client/modules/characters/client.lua',
     'client/modules/hud/client.lua',
+    'client/modules/economy/client.lua',
     'client/modules/jobs/client.lua',
     'client/modules/banking/client.lua',
     'client/modules/admin/client.lua',
@@ -85,6 +91,8 @@ files {
     'nui/notify/notify.js',
     'nui/hud/hud.css',
     'nui/hud/hud.js',
+    'nui/economy/economy.css',
+    'nui/economy/economy.js',
     'nui/menus/menus.css',
     'nui/menus/menus.js',
     'nui/characters/characters.css',

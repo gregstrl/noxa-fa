@@ -30,7 +30,8 @@ S.onNet('noxa:shop:buy', function(src, ply, shopId, itemId)
         return S.flag(src, ('shop:buy article inconnu %s/%s'):format(shopId, itemId))
     end
 
-    if not ply:removeMoney(E.Accounts.CASH, item.price, 'shop:' .. itemId) then
+    -- Débit espèces + TVA reversée au Trésor Public (puits anti-inflation).
+    if not Noxa.Economy.chargeWithTax(src, E.Accounts.CASH, item.price, 'shop:' .. itemId) then
         return TriggerClientEvent('noxa:notify', src, 'Espèces insuffisantes.', 'error')
     end
 

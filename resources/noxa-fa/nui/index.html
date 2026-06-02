@@ -21,6 +21,7 @@
     <link rel="stylesheet" href="world/world.css" />
     <link rel="stylesheet" href="shop/shop.css" />
     <link rel="stylesheet" href="phone/phone.css" />
+    <link rel="stylesheet" href="economy/economy.css" />
 </head>
 <body>
     <!-- Couche notifications (toasts) -->
@@ -28,6 +29,9 @@
 
     <!-- HUD permanent -->
     <div id="hud" class="hud hidden"></div>
+
+    <!-- Flux de transactions économiques (toasts +/− sous le HUD argent) -->
+    <div id="economy-feed"></div>
 
     <!-- Couche modale (menus contextuels, dialogues, confirmations) -->
     <div id="menu-layer" class="layer hidden"></div>
@@ -53,6 +57,7 @@
     <!-- Modules d'interface -->
     <script src="notify/notify.js"></script>
     <script src="hud/hud.js"></script>
+    <script src="economy/economy.js"></script>
     <script src="menus/menus.js"></script>
     <script src="characters/characters.js"></script>
     <script src="banking/banking.js"></script>
