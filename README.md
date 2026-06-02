@@ -1,4 +1,29 @@
-# Noxa FA — Base FiveM RP
+# NOXA FA
+> Framework custom Noxa · NUI 100% custom · oxmysql · Zéro ox_lib visuel
+
+## État actuel — beta-1.1 · 2026-06-02
+
+| Système | État | Notes |
+|---|---|---|
+| Core / Framework | ✅ | Comptes, multi-personnages, classe Player autoritaire, statebag répliqué |
+| Spawn & Connexion | ✅ | Deferral (vérif ban), spawn contrôlé serveur |
+| Création personnage NUI | ✅ | Sélection/création plein écran custom |
+| Inventaire / Items | ❌ | Champ `inventory` réservé, système à venir |
+| Économie & Prix | ✅ | Cash/banque bornés, virements, sociétés, boutique épicerie |
+| Véhicules (concessions, garages) | 🟡 | Table `noxa_vehicles` + carburant persistant ; garages/concession à venir |
+| Menu admin NUI (F10) | 🟡 | Commandes staff complètes ; panneau NUI F10 à venir |
+| Panel gestion serveur | ❌ | Non démarré |
+| Anti-cheat & Panel staff | 🟡 | Rate-limit, flag/violations, autoban, logs BDD ; panneau à venir |
+| Map · Blips · POI | ✅ | 13 catégories de POI, blips, zones de proximité + prompt NUI |
+| Drogues & Trafic | ❌ | Non démarré (prévu prochaine session) |
+| Téléphone NUI | 🟡 | Contacts, SMS temps réel, Twitter, Banque, Carte, Réglages ; appels à venir |
+| Jobs actifs (Police/EMS/Méca) | 🟡 | Whitelist, service, boss-actions, paie société ; gameplay métier à venir |
+| Immobilier (maisons/apparts) | ✅ | Achat, entrée/sortie, verrou, mobilier — 4 paliers, persistance BDD |
+| Météo & Heure serveur | ❌ | Non démarré |
+
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 20h · 2026-06-02
+
+---
 
 Base FiveM RP moderne, modulaire et sécurisée, développée quotidiennement.
 Référence (propriétaire, lecture seule) : base Seed (`noxa-fa-seed`).
@@ -10,84 +35,77 @@ Référence (propriétaire, lecture seule) : base Seed (`noxa-fa-seed`).
 - **UI 100 % NUI custom** (HTML/CSS/JS natif) — **zéro ox_lib visuel**
 
 > Design premium dark, typographie Inter/Poppins, animations fluides.
-> Aucun composant d'interface tiers : notifications, menus, dialogues,
-> HUD, sélection de personnage et banque sont entièrement maison (`nui/`).
+> Aucun composant d'interface tiers : notifications, menus, dialogues, HUD,
+> sélection de personnage, banque, **boutique, téléphone, immobilier** sont
+> entièrement maison (`nui/`).
 
 ## Architecture
 
 ```
 noxa-fa/
 ├── fxmanifest.lua          # Déclaration de la ressource & ordre de chargement
-├── sql/
-│   ├── install.sql         # ⭐ FICHIER UNIQUE à importer (tout-en-un, idempotent)
-│   ├── noxa.sql            # (référence) schéma de base
-│   └── migrations/
-│       └── 001_societies_jobs_banking.sql  # (référence) sociétés, factures, bans, véhicules
-├── shared/                 # Chargé client + serveur
-│   ├── config.lua          # Configuration centrale (économie, banque, jobs, admin)
-│   ├── enums.lua           # Référentiels (jobs, gangs, sociétés, comptes, grades)
-│   └── utils.lua           # Fonctions utilitaires + validation
+├── sql/install.sql         # ⭐ FICHIER UNIQUE à importer (tout-en-un, idempotent)
+├── shared/                 # config.lua (POI, shops, immobilier, phone) · enums · utils
 ├── server/
-│   ├── core/
-│   │   ├── db.lua          # Couche d'accès BDD (toutes les requêtes SQL)
-│   │   ├── security.lua    # Rate-limit, validation events, anti-flood
-│   │   ├── player.lua      # Classe Player (économie/job/gang/méta/duty autoritaires)
-│   │   └── manager.lua     # Registre joueurs + cycle de vie + sauvegardes
-│   ├── modules/
-│   │   ├── societies/      # Caisses partagées (jobs, gangs, État) — cache + flush différé
-│   │   ├── economy/        # Primitives monétaires + transferts
-│   │   ├── jobs/           # Affectation whitelistée, service, boss-actions, paie société
-│   │   ├── banking/        # Dépôt/retrait/virement + facturation
-│   │   ├── characters/     # Multi-personnages (création/sélection/suppression)
-│   │   └── admin/          # Staff : kick, ban, revive, tp, setgroup, économie...
-│   └── main.lua            # Bootstrap + exports framework
+│   ├── core/               # db · security · player · manager
+│   └── modules/
+│       ├── societies/ economy/ jobs/ banking/ characters/ needs/ admin/
+│       ├── world/          # shop.lua (épicerie) · fuel.lua (station essence)
+│       ├── properties/     # immobilier : achat/entrée/verrou/mobilier (autoritaire)
+│       └── phone/          # téléphone : numéro, contacts, SMS, réseau social
 ├── client/
-│   ├── core/
-│   │   ├── nui.lua         # Pont Lua <-> NUI (focus, menus, dialogues, callbacks)
-│   │   ├── spawn.lua       # Gestion du spawn
-│   │   └── ui.lua          # Notifications & annonces (NUI custom)
-│   ├── modules/
-│   │   ├── characters/     # Pilote l'écran NUI de sélection/création
-│   │   ├── hud/            # Alimente le HUD (argent/job/besoins)
-│   │   ├── jobs/           # /service, menu patron (NUI custom)
-│   │   ├── banking/        # Interface bancaire & factures (NUI custom)
-│   │   └── admin/          # Handlers déclenchés serveur (revive/heal/tp)
-│   └── main.lua            # Init + miroir statebag lecture seule
+│   ├── core/               # nui (pont) · spawn · ui
+│   └── modules/
+│       ├── characters/ hud/ jobs/ banking/ admin/
+│       ├── world/          # blips · zones (proximité + prompt) · shop · fuel
+│       ├── properties/     # portes interactives, intérieurs, mobilier
+│       └── phone/          # ouverture F1, pont NUI
 └── nui/                    # Interface 100 % custom (dossier par module)
-    ├── index.html          # Shell : monte les panneaux, route les messages
-    ├── shell.css / shell.js# Thème (design system) + routeur NUI + helpers
-    ├── notify/             # Toasts custom (remplace lib.notify)
-    ├── menus/              # Menus contextuels, dialogues, confirmations
-    ├── hud/                # HUD (argent, identité, emploi, besoins)
-    ├── characters/         # Sélection & création de personnage (plein écran)
-    └── banking/            # Interface bancaire premium (plein écran)
+    ├── shell.css/js        # Thème (design system) + routeur NUI + helpers
+    ├── notify/ menus/ hud/ characters/ banking/
+    ├── world/              # prompt d'interaction + jauge carburant
+    ├── shop/               # boutique épicerie premium
+    └── phone/              # smartphone (accueil + 6 applications)
 ```
 
 ## Principes
 
-- **Logique critique 100 % server-side** : argent, jobs, métadonnées validés serveur.
+- **Logique critique 100 % server-side** : argent, jobs, immobilier, achats validés serveur.
 - **Sécurité par défaut** : tout event réseau passe par `Security.onNet`
   (rate-limit + vérification de chargement + capture d'erreur).
-- **Ownership vérifié** : impossible de charger/supprimer le personnage d'autrui.
-- **Auditabilité** : transactions et incidents journalisés en base.
-- **Modularité** : ajout d'un module = un dossier `server/modules/<nom>` + entrée manifest.
+- **Ownership vérifié** : personnages, factures, biens immobiliers.
+- **Anti-dupe** : achat immobilier atomique (réservation BDD avant débit).
+- **Auditabilité** : transactions, incidents et achats journalisés en base.
+- **Modularité** : ajouter un module = un dossier + une entrée manifest.
 
-## Commandes
+## Commandes & touches
+
+### Monde
+- **E** — interagir avec un POI à proximité (banque, distributeur, épicerie,
+  station essence, porte d'un bien immobilier)
+- **F1** — ouvrir/fermer le téléphone
+- `/meubles` — gérer le mobilier (à l'intérieur de son bien)
 
 ### Joueur
-- `/service` (ou **F6**) — prendre / quitter le service
-- `/boss` — menu de gestion de société (patrons uniquement)
-- `/banque` (ou **F7**) — interface bancaire NUI (dépôt, retrait, virement, factures)
-- `/facturer [id] [montant] [libellé]` — émettre une facture (métiers habilités)
+- `/service` (**F6**) · `/boss` · `/banque` (**F7**) · `/facturer [id] [montant] [libellé]`
 
 ### Staff (rang vérifié serveur)
-- `/kick [id] [raison]` *(mod)*
-- `/ban [id] [1h|1d|3d|7d|30d|perm] [raison]` *(admin)* · `/unban [license]`
-- `/heal [id]` *(mod)* · `/revive [id]` *(admin)*
-- `/goto [id]` *(mod)* · `/bring [id]` *(admin)* · `/announce [msg]` *(mod)*
-- `/setmoney [id] [cash|bank] [montant]` *(admin)*
-- `/job [id] [job] [grade]` · `/setjobwl [id] [job] [gradeMax]` *(admin)*
-- `/setgroup [id] [rang]` *(superadmin)*
+- `/kick` `/ban` `/unban` `/heal` `/revive` `/goto` `/bring` `/announce`
+- `/setmoney` `/job` `/setjobwl` `/setgroup`
+
+## Nouveautés session (beta-1.1)
+
+- **Carte & POI** : 13 catégories (bank, atm×16, grocery, clothing, barber,
+  hospital, police, garage, fuel×10, mairie, fishing, hunting, casino), blips
+  configurables et zones de proximité natives (thread adaptatif, prompt NUI).
+- **Boutique épicerie** : eau/sandwich/jus/repas — prix & effets faim/soif
+  validés serveur, NUI premium.
+- **Station essence** : 2 $/% débité serveur, jauge NUI animée, persistance
+  `noxa_vehicles.fuel`.
+- **Immobilier** : 7 biens (studio/appartement/maison/villa), achat atomique,
+  entrée/sortie instanciée, verrouillage propriétaire, mobilier plaçable.
+- **Téléphone NUI** : accueil + Contacts, Messages (SMS temps réel), Twitter,
+  Banque (virement rapide), Carte, Réglages.
 
 ## Installation
 
@@ -96,21 +114,5 @@ noxa-fa/
 3. Placer la ressource et ajouter `ensure noxa-core` dans `server.cfg`.
 4. Démarrer : l'écran de sélection de personnage NUI s'affiche au spawn.
 
-> Touches par défaut : **F6** service · **F7** banque (modifiables dans les
-> paramètres FiveM — `RegisterKeyMapping`).
-
-## État du projet
-
-> **Core** : comptes, multi-personnages, identité, métadonnées, sécurité, logs.
-> **Économie** : cash/banque autoritaires, transferts, **sociétés (caisses
-> partagées)**, **banque (dépôt/retrait/virement)**, **facturation**.
-> **Emplois** : whitelist serveur, **service (duty)**, **boss-actions**
-> (embauche/licenciement/promotion), **paie prélevée sur la caisse société**.
-> **Besoins vitaux** : faim/soif/stress autoritaires serveur, dégâts à 0.
-> **Administration** : modération complète (kick/ban horodaté/unban),
-> téléportation, soin/réanimation, gestion économie/jobs/rangs, audit.
-> **Interface** : **100 % NUI custom** (notifications, menus, dialogues, HUD,
-> sélection de personnage, banque) — premium dark, zéro ox_lib visuel.
->
-> Prochaines étapes : inventaire custom NUI, garages & véhicules, immobilier,
-> métiers illégaux (drogues/braquages), téléphone NUI.
+> Touches par défaut : **F6** service · **F7** banque · **F1** téléphone ·
+> **E** interactions monde (modifiables — `RegisterKeyMapping`).

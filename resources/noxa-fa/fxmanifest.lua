@@ -5,7 +5,7 @@ lua54 'yes'
 name 'noxa-core'
 author 'Noxa FA'
 description 'Noxa FA — Base RP FiveM moderne, modulaire et sécurisée (UI 100% custom)'
-version '0.3.0'
+version '0.4.0'
 
 -- Dépendances : UNIQUEMENT oxmysql (base de données).
 -- ZÉRO ox_lib : toute l'interface est 100 % NUI custom (nui/).
@@ -40,6 +40,11 @@ server_scripts {
     'server/modules/characters/server.lua',
     'server/modules/needs/server.lua',
     'server/modules/admin/server.lua',
+    -- Monde & gameplay (après needs : la boutique applique des effets de besoins)
+    'server/modules/world/shop.lua',
+    'server/modules/world/fuel.lua',
+    'server/modules/properties/server.lua',
+    'server/modules/phone/server.lua',
     'server/main.lua',
 }
 
@@ -55,6 +60,14 @@ client_scripts {
     'client/modules/jobs/client.lua',
     'client/modules/banking/client.lua',
     'client/modules/admin/client.lua',
+    -- Monde : carte (blips), zones de proximité, boutique, carburant
+    'client/modules/world/blips.lua',
+    'client/modules/world/zones.lua',
+    'client/modules/world/shop.lua',
+    'client/modules/world/fuel.lua',
+    -- Immobilier & téléphone
+    'client/modules/properties/client.lua',
+    'client/modules/phone/client.lua',
     'client/main.lua',
 }
 
@@ -78,4 +91,10 @@ files {
     'nui/characters/characters.js',
     'nui/banking/banking.css',
     'nui/banking/banking.js',
+    'nui/world/world.css',
+    'nui/world/world.js',
+    'nui/shop/shop.css',
+    'nui/shop/shop.js',
+    'nui/phone/phone.css',
+    'nui/phone/phone.js',
 }

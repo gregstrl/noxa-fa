@@ -232,4 +232,126 @@ function DB.getAccountByLicense(license)
     return MySQL.single.await('SELECT * FROM noxa_accounts WHERE license = ?', { license })
 end
 
+-- ---------------------------------------------------------------------
+--  Véhicules — carburant (station essence)
+-- ---------------------------------------------------------------------
+
+--- Ajoute du carburant à un véhicule immatriculé (borné à 100). Sans effet
+--- si la plaque n'existe pas (véhicule libre / spawn non persisté).
+function DB.refuelVehicle(plate, units)
+    MySQL.update('UPDATE noxa_vehicles SET fuel = LEAST(100, fuel + ?) WHERE plate = ?',
+        { units, plate })
+end
+
+-- ---------------------------------------------------------------------
+--  Immobilier (maisons / appartements)
+-- ---------------------------------------------------------------------
+
+--- Crée un bien s'il n'existe pas encore (seed depuis la config au boot).
+function DB.ensureProperty(p)
+    MySQL.insert.await([[
+        INSERT INTO noxa_properties (name, label, tier, price, coords_door, coords_inside)
+        VALUES (?, ?, ?, ?, ?, ?)
+        ON DUPLICATE KEY UPDATE label = VALUES(label), tier = VALUES(tier),
+            price = VALUES(price), coords_door = VALUES(coords_door),
+            coords_inside = VALUES(coords_inside)
+    ]], { p.name, p.label, p.tier, p.price, p.door, p.inside })
+end
+
+--- Charge tous les biens (appelé une fois au démarrage).
+function DB.getProperties()
+    return MySQL.query.await('SELECT * FROM noxa_properties') or {}
+end
+
+--- Achat atomique : n'attribue le bien que s'il est encore libre.
+---@return boolean ok
+function DB.buyProperty(propId, ownerCid)
+    local affected = MySQL.update.await(
+        'UPDATE noxa_properties SET owner_cid = ?, locked = 1 WHERE id = ? AND owner_cid IS NULL',
+        { ownerCid, propId })
+    return (affected or 0) > 0
+end
+
+--- Libère un bien (rollback d'achat / revente).
+function DB.releaseProperty(propId)
+    MySQL.update('UPDATE noxa_properties SET owner_cid = NULL, locked = 0 WHERE id = ?', { propId })
+end
+
+--- Met à jour l'état de verrouillage d'un bien.
+function DB.setPropertyLocked(propId, locked)
+    MySQL.update('UPDATE noxa_properties SET locked = ? WHERE id = ?',
+        { locked and 1 or 0, propId })
+end
+
+--- Persiste le mobilier (JSON) d'un bien.
+function DB.savePropertyFurniture(propId, furnitureJson)
+    MySQL.update('UPDATE noxa_properties SET furniture = ? WHERE id = ?',
+        { furnitureJson, propId })
+end
+
+-- ---------------------------------------------------------------------
+--  Téléphone (numéro, contacts, SMS, réseau social)
+-- ---------------------------------------------------------------------
+
+--- Attribue/persiste le numéro de téléphone d'un personnage.
+function DB.setCharacterPhone(charId, phone)
+    MySQL.update('UPDATE noxa_characters SET phone = ? WHERE id = ?', { phone, charId })
+end
+
+function DB.getContacts(ownerCid)
+    return MySQL.query.await(
+        'SELECT id, name, number FROM noxa_phone_contacts WHERE owner_cid = ? ORDER BY name ASC',
+        { ownerCid }) or {}
+end
+
+function DB.addContact(ownerCid, name, number)
+    return MySQL.insert.await(
+        'INSERT INTO noxa_phone_contacts (owner_cid, name, number) VALUES (?, ?, ?)',
+        { ownerCid, name, number })
+end
+
+function DB.deleteContact(id, ownerCid)
+    return MySQL.update.await(
+        'DELETE FROM noxa_phone_contacts WHERE id = ? AND owner_cid = ?', { id, ownerCid })
+end
+
+--- Enregistre un SMS (numéros normalisés émetteur/destinataire).
+function DB.addMessage(fromNum, toNum, body)
+    return MySQL.insert.await(
+        'INSERT INTO noxa_phone_messages (from_num, to_num, body) VALUES (?, ?, ?)',
+        { fromNum, toNum, body })
+end
+
+--- Fil de discussion entre deux numéros (ordre chronologique).
+function DB.getThread(a, b, limit)
+    return MySQL.query.await([[
+        SELECT from_num, to_num, body, created_at FROM noxa_phone_messages
+        WHERE (from_num = ? AND to_num = ?) OR (from_num = ? AND to_num = ?)
+        ORDER BY id ASC LIMIT ?
+    ]], { a, b, b, a, limit or 200 }) or {}
+end
+
+--- Derniers correspondants (liste des conversations) d'un numéro.
+function DB.getConversations(myNum)
+    return MySQL.query.await([[
+        SELECT peer, MAX(created_at) AS last_at FROM (
+            SELECT to_num AS peer, created_at FROM noxa_phone_messages WHERE from_num = ?
+            UNION ALL
+            SELECT from_num AS peer, created_at FROM noxa_phone_messages WHERE to_num = ?
+        ) t GROUP BY peer ORDER BY last_at DESC LIMIT 50
+    ]], { myNum, myNum }) or {}
+end
+
+function DB.addTweet(cid, author, body)
+    return MySQL.insert.await(
+        'INSERT INTO noxa_phone_tweets (author_cid, author, body) VALUES (?, ?, ?)',
+        { cid, author, body })
+end
+
+function DB.getTweets(limit)
+    return MySQL.query.await(
+        'SELECT author, body, created_at FROM noxa_phone_tweets ORDER BY id DESC LIMIT ?',
+        { limit or 30 }) or {}
+end
+
 return DB

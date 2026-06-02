@@ -18,6 +18,9 @@
     <link rel="stylesheet" href="menus/menus.css" />
     <link rel="stylesheet" href="characters/characters.css" />
     <link rel="stylesheet" href="banking/banking.css" />
+    <link rel="stylesheet" href="world/world.css" />
+    <link rel="stylesheet" href="shop/shop.css" />
+    <link rel="stylesheet" href="phone/phone.css" />
 </head>
 <body>
     <!-- Couche notifications (toasts) -->
@@ -35,6 +38,16 @@
     <!-- Plein écran : banque -->
     <div id="banking" class="fullscreen hidden"></div>
 
+    <!-- Plein écran : boutique (épicerie) -->
+    <div id="shop" class="fullscreen hidden"></div>
+
+    <!-- Monde : prompt d'interaction + jauge carburant (informatif) -->
+    <div id="world-prompt"></div>
+    <div id="fuel-gauge" class="hidden"></div>
+
+    <!-- Smartphone (couche dédiée, animation d'ouverture) -->
+    <div id="phone"></div>
+
     <!-- Routeur NUI + helpers (chargé en premier) -->
     <script src="shell.js"></script>
     <!-- Modules d'interface -->
@@ -43,5 +56,8 @@
     <script src="menus/menus.js"></script>
     <script src="characters/characters.js"></script>
     <script src="banking/banking.js"></script>
+    <script src="world/world.js"></script>
+    <script src="shop/shop.js"></script>
+    <script src="phone/phone.js"></script>
 </body>
 </html>

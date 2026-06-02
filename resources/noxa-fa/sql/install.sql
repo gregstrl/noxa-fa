@@ -214,3 +214,64 @@ CREATE TABLE IF NOT EXISTS `noxa_vehicles` (
     KEY `idx_veh_society` (`society`),
     KEY `idx_veh_state` (`state`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+--  Immobilier (maisons / appartements). Coords pilotées par la config ;
+--  ownership, verrou et mobilier persistés ici. Seed idempotent au boot.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `noxa_properties` (
+    `id`            INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `name`          VARCHAR(48)  NOT NULL,                 -- clé technique (ex: apt_integrity)
+    `label`         VARCHAR(64)  NOT NULL,
+    `tier`          VARCHAR(16)  NOT NULL DEFAULT 'studio',-- studio|apartment|house|villa
+    `price`         BIGINT       NOT NULL DEFAULT 0,
+    `owner_cid`     VARCHAR(12)  DEFAULT NULL,             -- propriétaire (NULL = à vendre)
+    `coords_door`   LONGTEXT     DEFAULT NULL,             -- JSON {x,y,z}
+    `coords_inside` LONGTEXT     DEFAULT NULL,             -- JSON {x,y,z,heading}
+    `locked`        TINYINT(1)   NOT NULL DEFAULT 1,
+    `furniture`     LONGTEXT     DEFAULT NULL,             -- JSON [{model,x,y,z,heading}]
+    `created_at`    TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    UNIQUE KEY `uq_property_name` (`name`),
+    KEY `idx_prop_owner` (`owner_cid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+--  Téléphone — contacts
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `noxa_phone_contacts` (
+    `id`         INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `owner_cid`  VARCHAR(12)  NOT NULL,
+    `name`       VARCHAR(32)  NOT NULL,
+    `number`     VARCHAR(15)  NOT NULL,
+    `created_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_contact_owner` (`owner_cid`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+--  Téléphone — SMS (numéros normalisés émetteur/destinataire)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `noxa_phone_messages` (
+    `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `from_num`   VARCHAR(15)  NOT NULL,
+    `to_num`     VARCHAR(15)  NOT NULL,
+    `body`       VARCHAR(255) NOT NULL,
+    `created_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_msg_from` (`from_num`),
+    KEY `idx_msg_to` (`to_num`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+-- ---------------------------------------------------------------------
+--  Téléphone — réseau social (Twitter-like)
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `noxa_phone_tweets` (
+    `id`         BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `author_cid` VARCHAR(12)  DEFAULT NULL,
+    `author`     VARCHAR(48)  NOT NULL,
+    `body`       VARCHAR(280) NOT NULL,
+    `created_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`),
+    KEY `idx_tweet_created` (`created_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
