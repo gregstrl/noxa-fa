@@ -64,6 +64,19 @@ C.Items = {
         label = 'Crochet', weight = 120, stackable = true, usable = true,
         emoji = '🪛', category = 'outil', effects = { action = 'lockpick' },
     },
+    -- Outils métiers (jobs actifs : police / EMS / mécanicien) -----------
+    handcuffs = {
+        label = 'Menottes', weight = 300, stackable = false, usable = false,
+        emoji = '🔗', category = 'outil',
+    },
+    medikit = {
+        label = 'Kit médical', weight = 1200, stackable = true, usable = false,
+        emoji = '🚑', category = 'outil',
+    },
+    repairkit = {
+        label = 'Kit de réparation', weight = 2000, stackable = true, usable = false,
+        emoji = '🔧', category = 'outil',
+    },
 }
 
 --- Définition d'un item (ou nil si inconnu).

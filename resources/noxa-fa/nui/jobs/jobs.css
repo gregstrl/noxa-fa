@@ -1,0 +1,95 @@
+/* =====================================================================
+   NOXA FA — NUI des jobs actifs (MDT police · atelier méca · fouille)
+   • Panneau centré, z-index 50 (couche menus/modales).
+   • Conteneur plein écran pointer-events:none ; seul le panneau est actif.
+   ===================================================================== */
+
+#jobs {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font);
+}
+#jobs.hidden { display: none !important; }
+
+.job-scrim {
+    position: absolute;
+    inset: 0;
+    background: rgba(5, 7, 12, 0.5);
+    backdrop-filter: blur(4px);
+    -webkit-backdrop-filter: blur(4px);
+}
+
+.job-card {
+    position: relative;
+    width: 560px;
+    max-height: 78vh;
+    display: flex;
+    flex-direction: column;
+    background: rgba(10, 10, 10, 0.95);
+    border: 1px solid var(--accent);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg), var(--glow);
+    overflow: hidden;
+    pointer-events: auto;
+    animation: scaleIn .26s cubic-bezier(.2, .9, .3, 1) both;
+}
+
+.job-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--accent-grad-soft);
+    border-bottom: 1px solid var(--border);
+}
+.job-title { font-family: var(--font-display); font-weight: 700; font-size: 17px; }
+.job-sub { font-size: 12px; color: var(--text-dim); }
+.job-x {
+    margin-left: auto;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-dim);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-sm);
+    padding: 6px 12px;
+    transition: color .15s, border-color .15s;
+}
+.job-x:hover { color: var(--error); border-color: var(--error); }
+
+.job-body { padding: 18px 20px; overflow-y: auto; }
+
+.job-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--r-sm);
+    background: var(--surface-glass);
+    border: 1px solid var(--border);
+    margin-bottom: 6px;
+}
+.job-row-ic { font-size: 18px; width: 26px; text-align: center; }
+.job-row-main { flex: 1; min-width: 0; }
+.job-row-label { font-size: 14px; font-weight: 600; }
+.job-row-meta { font-size: 12px; color: var(--text-dim); }
+.job-row-qty { font-weight: 700; color: var(--accent); }
+
+.job-section { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); margin: 6px 0 10px; font-weight: 700; }
+.job-actions { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+.job-empty { text-align: center; color: var(--text-faint); padding: 22px; font-size: 13px; }
+
+.job-stat {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 14px;
+    border-radius: var(--r-sm);
+    background: var(--surface-glass);
+    border: 1px solid var(--border);
+    margin-bottom: 12px;
+}
+.job-stat b { color: var(--accent); }

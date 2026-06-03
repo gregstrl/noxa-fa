@@ -1,0 +1,267 @@
+/* =====================================================================
+   NOXA FA — Panneau d'administration NUI (style RageUI, overlay staff)
+   • Position : haut-gauche · z-index 60 (couche admin, au-dessus de tout).
+   • Conteneur fixé plein écran, pointer-events: none ; seuls les éléments
+     interactifs réactivent pointer-events: auto (cf. RÈGLES NUI FIVEM).
+   • Couleurs/rayons/ombres issus du design system (shell.css).
+   ===================================================================== */
+
+#admin {
+    position: fixed;
+    inset: 0;
+    z-index: 60;               /* couche admin (cf. doctrine z-index) */
+    pointer-events: none;      /* transparent par défaut : le jeu reste cliquable */
+    font-family: var(--font);
+}
+
+/* Conteneur du panneau : haut-gauche, interactif. */
+.adm-panel {
+    position: absolute;
+    top: 24px;
+    left: 24px;
+    width: 720px;
+    max-height: calc(100vh - 48px);
+    display: flex;
+    flex-direction: column;
+    background: rgba(10, 10, 10, 0.95);
+    border: 1px solid var(--accent);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg), 0 0 0 1px rgba(99, 102, 241, 0.15), var(--glow);
+    overflow: hidden;
+    pointer-events: auto;      /* zone interactive */
+    animation: admSlideIn .22s cubic-bezier(.2, .9, .3, 1) both;
+}
+
+@keyframes admSlideIn {
+    from { opacity: 0; transform: translateX(-32px); }
+    to   { opacity: 1; transform: translateX(0); }
+}
+
+/* En-tête ------------------------------------------------------------- */
+.adm-head {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 16px 20px;
+    background: var(--accent-grad-soft);
+    border-bottom: 1px solid var(--border);
+}
+.adm-logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: .02em;
+}
+.adm-logo span { color: var(--accent); }
+.adm-head-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    margin-left: 2px;
+}
+.adm-rank {
+    margin-left: auto;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: .06em;
+    color: var(--accent);
+    background: var(--accent-soft);
+    border: 1px solid rgba(99, 102, 241, 0.4);
+    padding: 5px 12px;
+    border-radius: 999px;
+}
+.adm-close {
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--text-dim);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-sm);
+    padding: 6px 12px;
+    transition: color .15s, border-color .15s;
+}
+.adm-close:hover { color: var(--error); border-color: var(--error); }
+
+/* Corps : nav latérale + contenu -------------------------------------- */
+.adm-body {
+    display: flex;
+    min-height: 0;
+    flex: 1;
+}
+.adm-nav {
+    width: 208px;
+    flex-shrink: 0;
+    padding: 10px;
+    border-right: 1px solid var(--border);
+    overflow-y: auto;
+    background: rgba(0, 0, 0, 0.25);
+}
+.adm-nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 12px;
+    border-radius: var(--r-sm);
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--text-soft);
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: background .14s, color .14s, border-color .14s;
+}
+.adm-nav-item:hover { background: var(--surface-glass); color: var(--text); }
+.adm-nav-item.active {
+    background: var(--accent-soft);
+    color: #fff;
+    border-color: rgba(99, 102, 241, 0.45);
+}
+.adm-nav-ic { font-size: 16px; width: 20px; text-align: center; }
+
+.adm-content {
+    flex: 1;
+    min-width: 0;
+    padding: 18px 20px;
+    overflow-y: auto;
+}
+.adm-section-title {
+    font-family: var(--font-display);
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 14px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.adm-hint { font-size: 12px; color: var(--text-faint); margin-bottom: 12px; }
+
+/* Liste des joueurs --------------------------------------------------- */
+.adm-search {
+    width: 100%;
+    margin-bottom: 12px;
+}
+.adm-players { display: flex; flex-direction: column; gap: 6px; }
+.adm-player {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 12px;
+    border-radius: var(--r-sm);
+    background: var(--surface-glass);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: border-color .14s, background .14s;
+}
+.adm-player:hover { border-color: var(--border-strong); }
+.adm-player.selected { border-color: var(--accent); background: var(--accent-soft); }
+.adm-pid {
+    font-weight: 700;
+    font-size: 13px;
+    color: var(--accent);
+    min-width: 34px;
+    text-align: center;
+}
+.adm-pinfo { flex: 1; min-width: 0; }
+.adm-pname { font-size: 14px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.adm-pmeta { font-size: 11px; color: var(--text-dim); display: flex; gap: 8px; flex-wrap: wrap; }
+.adm-badge {
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 999px;
+}
+.adm-badge.duty   { color: var(--success); background: rgba(34, 197, 94, 0.14); }
+.adm-badge.staff  { color: var(--warning); background: rgba(245, 158, 11, 0.14); }
+.adm-ping { font-size: 11px; color: var(--text-faint); min-width: 48px; text-align: right; }
+
+/* Barre d'actions sur joueur sélectionné ------------------------------ */
+.adm-selbar {
+    margin-top: 14px;
+    padding: 12px;
+    border-radius: var(--r-md);
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--border);
+}
+.adm-selbar.empty { color: var(--text-faint); font-size: 13px; text-align: center; padding: 18px; }
+.adm-sel-name { font-size: 14px; font-weight: 700; margin-bottom: 10px; }
+.adm-actions { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+
+/* Boutons d'action compacts ------------------------------------------ */
+.adm-act {
+    font-family: var(--font);
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
+    background: var(--bg-2);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-sm);
+    padding: 9px 10px;
+    cursor: pointer;
+    text-align: center;
+    transition: transform .1s, border-color .15s, background .15s;
+}
+.adm-act:hover { transform: translateY(-1px); border-color: var(--accent); }
+.adm-act.danger { color: #fca5a5; border-color: rgba(239, 68, 68, 0.35); }
+.adm-act.danger:hover { border-color: var(--error); background: rgba(239, 68, 68, 0.15); }
+
+/* Grille de formulaire générique ------------------------------------- */
+.adm-form { display: flex; flex-direction: column; gap: 12px; max-width: 420px; }
+.adm-row { display: flex; gap: 10px; }
+.adm-row > * { flex: 1; }
+
+/* Logs ---------------------------------------------------------------- */
+.adm-filters { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+.adm-chip {
+    font-size: 12px;
+    padding: 5px 11px;
+    border-radius: 999px;
+    border: 1px solid var(--border-strong);
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: all .14s;
+}
+.adm-chip:hover { color: var(--text); }
+.adm-chip.active { background: var(--accent-soft); color: #fff; border-color: var(--accent); }
+.adm-logs { display: flex; flex-direction: column; gap: 5px; }
+.adm-log {
+    display: flex;
+    gap: 10px;
+    align-items: baseline;
+    padding: 8px 11px;
+    border-radius: var(--r-sm);
+    background: var(--surface-glass);
+    border-left: 3px solid var(--text-faint);
+    font-size: 12px;
+}
+.adm-log.info  { border-left-color: var(--info); }
+.adm-log.warn  { border-left-color: var(--warning); }
+.adm-log.error { border-left-color: var(--error); }
+.adm-log-cat { font-weight: 700; text-transform: uppercase; font-size: 10px; color: var(--text-dim); min-width: 64px; }
+.adm-log-msg { flex: 1; color: var(--text-soft); }
+.adm-log-time { color: var(--text-faint); font-size: 11px; white-space: nowrap; }
+
+/* Serveur / infos ----------------------------------------------------- */
+.adm-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; }
+.adm-stat {
+    padding: 16px;
+    border-radius: var(--r-md);
+    background: var(--surface-glass);
+    border: 1px solid var(--border);
+}
+.adm-stat-val { font-family: var(--font-display); font-size: 26px; font-weight: 800; color: var(--accent); }
+.adm-stat-label { font-size: 12px; color: var(--text-dim); margin-top: 4px; text-transform: uppercase; letter-spacing: .05em; }
+
+.adm-empty { text-align: center; color: var(--text-faint); padding: 28px; font-size: 13px; }
+.adm-textarea {
+    width: 100%;
+    min-height: 90px;
+    resize: vertical;
+    font-family: var(--font);
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg-0);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-sm);
+    padding: 12px 14px;
+    outline: none;
+}
+.adm-textarea:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }

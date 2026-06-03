@@ -7,6 +7,20 @@
 Noxa = Noxa or {}
 local NUI = Noxa.NUI
 
+-- Panneau NUI partagé des jobs actifs (MDT police, atelier méca, fouille).
+-- Fermeture pilotée par le système anti-superposition (ouverture d'un autre panneau).
+NUI.registerPanel('jobs', function()
+    NUI.send('jobs', 'close', {})
+end)
+
+RegisterNUICallback('jobsClose', function(_, cb)
+    if NUI.activePanel == 'jobs' then
+        NUI.closePanel('jobs')
+        NUI.setFocus(false)
+    end
+    cb('ok')
+end)
+
 -- /service : bascule l'état de service (duty). Keybind natif F6.
 RegisterCommand('service', function()
     TriggerServerEvent('noxa:job:toggleDuty')

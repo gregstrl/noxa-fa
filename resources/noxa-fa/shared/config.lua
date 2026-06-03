@@ -44,6 +44,10 @@ C.Security = {
         ['noxa:inv:use']     = { count = 30, window = 10000 },
         ['noxa:inv:request'] = { count = 30, window = 10000 },
         ['noxa:inv:drop']    = { count = 30, window = 10000 },
+        -- Panneau admin : navigation au clavier + rafraîchissements fréquents
+        -- (limites larges pour ne pas flagger un staff légitime).
+        ['noxa:admin:fetch']  = { count = 80, window = 10000 },
+        ['noxa:admin:action'] = { count = 60, window = 10000 },
     },
     -- Bannir automatiquement après N violations critiques détectées
     autobanThreshold = 5,
@@ -70,6 +74,34 @@ C.Jobs = {
     payInterval   = 30 * 60 * 1000, -- versement des salaires : 30 min
     payRequiresSociety = true,      -- ne verser que si la société a les fonds
     maxGrade      = 20,             -- borne anti-abus côté boss-actions
+}
+
+-- =====================================================================
+--  JOBS ACTIFS — réglages Police / EMS / Mécanicien (validés serveur)
+-- =====================================================================
+C.JobActions = {
+    -- Police : menottage, fouille, amende, emprisonnement
+    police = {
+        actionDistance = 4.0,        -- distance max acteur<->cible (menottes/fouille)
+        maxFine        = 50000,      -- montant maximal d'une amende
+        maxJail        = 120,        -- durée maximale de prison (minutes)
+        -- Prison de Bolingbroke (intérieur cellules)
+        jail    = { x = 1641.80, y = 2570.50, z = 45.56, heading = 270.0 },
+        release = { x = 1846.00, y = 2585.00, z = 45.67, heading = 0.0 },
+    },
+    -- EMS : réanimation, soin, état inconscient
+    ems = {
+        actionDistance = 4.0,
+        hospital       = { x = 295.80, y = -1446.90, z = 29.97, heading = 0.0 },
+        deathBleedout   = 5 * 60,    -- secondes avant respawn auto possible (info HUD)
+    },
+    -- Mécanicien : réparation (coût items + délai)
+    mechanic = {
+        repairTime     = 30000,      -- durée de réparation (ms)
+        repairItem     = 'repairkit',-- item consommé
+        repairCount    = 1,          -- quantité consommée par réparation
+        actionDistance = 6.0,        -- distance max au véhicule réparé
+    },
 }
 
 -- Sociétés

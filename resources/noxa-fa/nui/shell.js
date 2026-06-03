@@ -46,6 +46,9 @@ const Noxa = (() => {
     // Échap : ferme la couche modale active (priorité décroissante).
     window.addEventListener('keydown', (e) => {
         if (e.key !== 'Escape') return;
+        // Priorité décroissante par couche z-index (admin z60 > jobs z50 > …).
+        if (window.NoxaAdmin && NoxaAdmin.handleEscape()) return;
+        if (window.NoxaJobs && NoxaJobs.handleEscape()) return;
         if (window.NoxaMenu && NoxaMenu.handleEscape()) return;
         if (window.NoxaBanking && NoxaBanking.handleEscape()) return;
         if (window.NoxaShop && NoxaShop.handleEscape()) return;

@@ -237,4 +237,313 @@ staffCommand('unban', 'admin', function(src, args)
     feedback(src, 'Compte débanni.', 'success')
 end)
 
+-- =====================================================================
+--  PANNEAU ADMIN NUI (F10) — flux 100 % piloté serveur
+--  Le client n'émet que des INTENTIONS ; chaque event revérifie le rang
+--  staff côté serveur (jamais le client) et journalise les actions
+--  sensibles. Aucune donnée envoyée par le client n'est de confiance.
+-- =====================================================================
+
+local serverStart = os.time()
+
+-- ---------------------------------------------------------------------
+--  Construction des instantanés (lecture seule) envoyés à la NUI
+-- ---------------------------------------------------------------------
+
+--- Liste temps réel de TOUS les joueurs connectés (chargés ou en lobby).
+local function buildPlayers()
+    local list = {}
+    for _, sid in ipairs(GetPlayers()) do
+        local src = tonumber(sid)
+        local ply = Noxa.Players.get(src)
+        local jobDef = ply and E.Jobs[ply.job]
+        list[#list + 1] = {
+            id     = src,
+            name   = ply and ply:getName() or GetPlayerName(src),
+            steam  = GetPlayerName(src),
+            ping   = GetPlayerPing(src),
+            rank   = ply and ply.staffRank or 'user',
+            job    = ply and ply.job or '-',
+            jobLabel = jobDef and jobDef.label or '—',
+            grade  = ply and ply.job_grade or 0,
+            duty   = ply and ply.duty or false,
+            cash   = ply and ply.cash or 0,
+            bank   = ply and ply.bank or 0,
+            cid    = ply and ply.citizenid or nil,
+            loaded = ply ~= nil,
+        }
+    end
+    table.sort(list, function(a, b) return a.id < b.id end)
+    return list
+end
+
+--- Référentiel des jobs (pour les listes déroulantes côté NUI).
+local function buildJobs()
+    local jobs = {}
+    for name, def in pairs(E.Jobs) do
+        local grades = {}
+        for g, gd in pairs(def.grades) do
+            grades[#grades + 1] = { grade = g, label = gd.label }
+        end
+        table.sort(grades, function(a, b) return a.grade < b.grade end)
+        jobs[#jobs + 1] = { name = name, label = def.label, grades = grades }
+    end
+    table.sort(jobs, function(a, b) return a.label < b.label end)
+    return jobs
+end
+
+--- Infos serveur (compteur, uptime, etc.).
+local function buildServer()
+    local up = os.time() - serverStart
+    return {
+        name      = CFG.ServerName,
+        players   = Noxa.Players.count(),
+        connected = #GetPlayers(),
+        maxClients = GetConvarInt('sv_maxclients', 48),
+        uptime    = up,
+        resource  = GetCurrentResourceName(),
+    }
+end
+
+--- Pousse l'instantané « joueurs » au demandeur (après chaque action).
+local function pushPlayers(src)
+    TriggerClientEvent('noxa:admin:data', src, 'players', buildPlayers())
+end
+
+-- ---------------------------------------------------------------------
+--  Ouverture du panneau : gate serveur (non-staff -> rien)
+-- ---------------------------------------------------------------------
+
+Noxa.Security.onNet('noxa:admin:open', function(src, ply)
+    if not hasStaff(src, 'helper') then
+        -- Silencieux : un non-staff qui presse F10 n'obtient aucune ouverture.
+        return
+    end
+    DB.log('admin', 'info', ply and ply.license,
+        ('%s a ouvert le panneau admin'):format(actorName(src)))
+    TriggerClientEvent('noxa:admin:grant', src, {
+        rank         = ply and ply.staffRank or 'user',
+        players      = buildPlayers(),
+        jobs         = buildJobs(),
+        server       = buildServer(),
+        banDurations = (function()
+            local keys = {}
+            for k in pairs(CFG.Admin.banDurations) do keys[#keys + 1] = k end
+            table.sort(keys)
+            return keys
+        end)(),
+    })
+end)
+
+-- ---------------------------------------------------------------------
+--  Récupération de données à la demande (rafraîchissement de section)
+-- ---------------------------------------------------------------------
+
+Noxa.Security.onNet('noxa:admin:fetch', function(src, ply, what, arg)
+    if not hasStaff(src, 'helper') then return Noxa.Security.flag(src, 'admin:fetch sans rang') end
+    if what == 'players' then
+        pushPlayers(src)
+    elseif what == 'server' then
+        TriggerClientEvent('noxa:admin:data', src, 'server', buildServer())
+    elseif what == 'logs' then
+        -- Les logs restent réservés aux modérateurs et au-dessus.
+        if not hasStaff(src, 'mod') then return end
+        local category = (type(arg) == 'string' and arg ~= 'all') and arg or nil
+        local sql = 'SELECT category, level, message, created_at FROM noxa_logs '
+        local params = {}
+        if category then sql = sql .. 'WHERE category = ? '; params[1] = category end
+        sql = sql .. 'ORDER BY id DESC LIMIT 60'
+        MySQL.query(sql, params, function(rows)
+            TriggerClientEvent('noxa:admin:data', src, 'logs', rows or {})
+        end)
+    end
+end)
+
+-- ---------------------------------------------------------------------
+--  Table d'actions : chaque action déclare son rang minimal + son handler.
+--  handler(src, actor, targetId, params). targetId/params déjà extraits.
+-- ---------------------------------------------------------------------
+
+local function resolveTarget(targetId)
+    return Noxa.Players.get(tonumber(targetId))
+end
+
+local actions = {}
+
+actions.heal = { rank = 'mod', run = function(src, ply, tid)
+    TriggerClientEvent('noxa:admin:heal', tid)
+    feedback(src, 'Joueur soigné.', 'success')
+end }
+
+actions.revive = { rank = 'admin', run = function(src, ply, tid)
+    TriggerClientEvent('noxa:admin:revive', tid)
+    local t = resolveTarget(tid)
+    if t then t:setMeta('isDead', false) end
+    DB.log('admin', 'info', nil, ('%s a réanimé src:%s'):format(actorName(src), tid))
+    feedback(src, 'Joueur réanimé.', 'success')
+end }
+
+actions.freeze = { rank = 'mod', run = function(src, ply, tid, p)
+    TriggerClientEvent('noxa:admin:freeze', tid, p.state == true)
+    feedback(src, p.state and 'Joueur figé.' or 'Joueur libéré.', 'success')
+end }
+
+actions.bring = { rank = 'admin', run = function(src, ply, tid)
+    if src == 0 then return end
+    local ped = GetPlayerPed(src)
+    if ped == 0 then return end
+    local c = GetEntityCoords(ped)
+    TriggerClientEvent('noxa:admin:teleport', tid, { x = c.x, y = c.y, z = c.z })
+    DB.log('admin', 'info', nil, ('%s a ramené src:%s'):format(actorName(src), tid))
+end }
+
+actions['goto'] = { rank = 'mod', run = function(src, ply, tid)
+    if src == 0 then return end
+    local ped = GetPlayerPed(tid)
+    if ped == 0 then return feedback(src, 'Cible introuvable.', 'error') end
+    local c = GetEntityCoords(ped)
+    TriggerClientEvent('noxa:admin:teleport', src, { x = c.x, y = c.y, z = c.z })
+end }
+
+actions.kick = { rank = 'mod', run = function(src, ply, tid, p)
+    local name = GetPlayerName(tid)
+    if not name then return feedback(src, 'Cible introuvable.', 'error') end
+    local reason = (p.reason and p.reason ~= '') and p.reason or 'Comportement contraire au règlement.'
+    DB.log('admin', 'warn', GetPlayerIdentifierByType(tid, 'license'),
+        ('%s a kické %s : %s'):format(actorName(src), name, reason))
+    DropPlayer(tid, ('[Noxa FA] Expulsé : %s'):format(reason))
+    feedback(src, ('%s expulsé.'):format(name), 'success')
+end }
+
+actions.ban = { rank = 'admin', run = function(src, ply, tid, p)
+    local target = resolveTarget(tid)
+    if not target then return feedback(src, 'Cible introuvable / non chargée.', 'error') end
+    local durKey  = p.duration or 'perm'
+    local seconds = CFG.Admin.banDurations[durKey] or tonumber(durKey)
+    if not seconds then return feedback(src, 'Durée invalide.', 'error') end
+    local expire  = (seconds == 0) and nil or (os.time() + seconds)
+    local reason  = (p.reason and p.reason ~= '') and p.reason or 'Comportement contraire au règlement.'
+    DB.setAccountBan(target.accountId, reason, expire)
+    DB.insertBan({ account_id = target.accountId, license = target.license,
+        reason = reason, banned_by = actorName(src), expire = expire })
+    DB.log('admin', 'error', target.license,
+        ('%s a banni %s (%s) : %s'):format(actorName(src), target:getName(), durKey, reason))
+    DropPlayer(tid, ('[Noxa FA] Banni (%s)\nRaison : %s'):format(durKey, reason))
+    feedback(src, ('%s banni (%s).'):format(target:getName(), durKey), 'success')
+end }
+
+actions.warn = { rank = 'mod', run = function(src, ply, tid, p)
+    local target = resolveTarget(tid)
+    if not target then return feedback(src, 'Cible introuvable.', 'error') end
+    local reason = (p.reason and p.reason ~= '') and p.reason or 'Avertissement.'
+    TriggerClientEvent('noxa:notify', target.source, ('⚠ Avertissement staff : %s'):format(reason), 'warning')
+    DB.log('admin', 'warn', target.license, ('%s a averti %s : %s'):format(actorName(src), target:getName(), reason))
+    feedback(src, ('Avertissement envoyé à %s.'):format(target:getName()), 'success')
+end }
+
+actions.setmoney = { rank = 'admin', run = function(src, ply, tid, p)
+    local target  = resolveTarget(tid)
+    local account = p.account
+    local amount  = U.sanitizeAmount(p.amount)
+    if not target or (account ~= E.Accounts.CASH and account ~= E.Accounts.BANK) or not amount then
+        return feedback(src, 'Paramètres invalides.', 'error')
+    end
+    local current = target:getMoney(account)
+    if amount > current then
+        target:addMoney(account, amount - current, 'admin:setmoney')
+    elseif amount < current then
+        target:removeMoney(account, current - amount, 'admin:setmoney')
+    end
+    DB.log('admin', 'warn', target.license, ('%s a réglé %s de %s à %s'):format(
+        actorName(src), account, target:getName(), U.money(amount)))
+    feedback(src, ('%s.%s = %s'):format(target:getName(), account, U.money(amount)), 'success')
+end }
+
+actions.givemoney = { rank = 'admin', run = function(src, ply, tid, p)
+    local target  = resolveTarget(tid)
+    local account = p.account == E.Accounts.CASH and E.Accounts.CASH or E.Accounts.BANK
+    local amount  = U.sanitizeAmount(p.amount)
+    if not target or not amount then return feedback(src, 'Paramètres invalides.', 'error') end
+    if p.remove then
+        if not target:removeMoney(account, amount, 'admin:remove') then
+            return feedback(src, 'Solde insuffisant.', 'error')
+        end
+    else
+        target:addMoney(account, amount, 'admin:give')
+    end
+    DB.log('admin', 'warn', target.license, ('%s a %s %s (%s) à %s'):format(
+        actorName(src), p.remove and 'retiré' or 'donné', U.money(amount), account, target:getName()))
+    feedback(src, 'Opération effectuée.', 'success')
+end }
+
+actions.setjob = { rank = 'admin', run = function(src, ply, tid, p)
+    local target = resolveTarget(tid)
+    if not target or not p.job then return feedback(src, 'Paramètres invalides.', 'error') end
+    local ok, err = Noxa.Jobs.setPlayerJob(target, p.job, tonumber(p.grade) or 0, { bypassWhitelist = true })
+    if ok then
+        DB.log('admin', 'info', target.license, ('%s a affecté %s à %s g%s'):format(
+            actorName(src), target:getName(), p.job, tonumber(p.grade) or 0))
+        feedback(src, ('%s -> %s'):format(target:getName(), p.job), 'success')
+    else
+        feedback(src, ('Échec: %s'):format(err or 'inconnu'), 'error')
+    end
+end }
+
+actions.announce = { rank = 'mod', run = function(src, ply, tid, p)
+    local msg = p.message
+    if type(msg) ~= 'string' or msg == '' then return feedback(src, 'Message vide.', 'error') end
+    TriggerClientEvent('noxa:announce', -1, msg)
+    DB.log('admin', 'info', nil, ('%s a annoncé: %s'):format(actorName(src), msg))
+    feedback(src, 'Annonce diffusée.', 'success')
+end }
+
+-- Téléportation libre (waypoint / coords) — exécutée sur le client demandeur.
+actions.tpwaypoint = { rank = 'mod', run = function(src)
+    TriggerClientEvent('noxa:admin:tpWaypoint', src)
+end }
+
+actions.tpcoords = { rank = 'mod', run = function(src, ply, tid, p)
+    local x, y, z = tonumber(p.x), tonumber(p.y), tonumber(p.z)
+    if not (x and y and z) then return feedback(src, 'Coordonnées invalides.', 'error') end
+    TriggerClientEvent('noxa:admin:teleport', src, { x = x, y = y, z = z })
+end }
+
+-- Véhicules — spawn / réparation / suppression / couleur (côté client demandeur).
+actions.spawnvehicle = { rank = 'admin', run = function(src, ply, tid, p)
+    if type(p.model) ~= 'string' or p.model == '' then return feedback(src, 'Modèle invalide.', 'error') end
+    TriggerClientEvent('noxa:admin:spawnVehicle', src, p.model)
+    DB.log('admin', 'info', nil, ('%s a spawn le véhicule %s'):format(actorName(src), p.model))
+end }
+
+actions.repairvehicle = { rank = 'mod', run = function(src)
+    TriggerClientEvent('noxa:admin:vehicleAct', src, 'repair')
+end }
+
+actions.deletevehicle = { rank = 'admin', run = function(src)
+    TriggerClientEvent('noxa:admin:vehicleAct', src, 'delete')
+end }
+
+actions.colorvehicle = { rank = 'mod', run = function(src, ply, tid, p)
+    TriggerClientEvent('noxa:admin:vehicleAct', src, 'color',
+        { r = tonumber(p.r) or 0, g = tonumber(p.g) or 0, b = tonumber(p.b) or 0 })
+end }
+
+-- ---------------------------------------------------------------------
+--  Point d'entrée unique des actions NUI
+-- ---------------------------------------------------------------------
+
+Noxa.Security.onNet('noxa:admin:action', function(src, ply, payload)
+    if type(payload) ~= 'table' or type(payload.action) ~= 'string' then
+        return Noxa.Security.flag(src, 'admin:action malformée')
+    end
+    local def = actions[payload.action]
+    if not def then return Noxa.Security.flag(src, ('admin:action inconnue (%s)'):format(payload.action)) end
+    if not hasStaff(src, def.rank) then
+        return Noxa.Security.flag(src, ('admin:action %s sans rang'):format(payload.action))
+    end
+    def.run(src, ply, payload.target, payload.params or {})
+    -- Rafraîchit la liste joueurs (l'action a pu en modifier l'état).
+    pushPlayers(src)
+end)
+
 return Admin

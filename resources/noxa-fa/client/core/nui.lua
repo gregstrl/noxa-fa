@@ -47,6 +47,38 @@ function NUI.releaseAll()
 end
 
 -- ---------------------------------------------------------------------
+--  Anti-superposition : un seul panneau « plein » actif à la fois
+--  Chaque module enregistre une fonction de fermeture ; ouvrir un panneau
+--  ferme automatiquement le précédent (doctrine z-index : jamais deux
+--  panneaux simultanés). Voir RÈGLES ANTI-SUPERPOSITION.
+-- ---------------------------------------------------------------------
+NUI.activePanel = nil
+local panelClosers = {}
+
+--- Déclare la fonction de fermeture d'un panneau (idempotente attendue).
+---@param name string
+---@param closeFn fun()
+function NUI.registerPanel(name, closeFn)
+    panelClosers[name] = closeFn
+end
+
+--- Marque un panneau comme actif, en fermant proprement le précédent.
+---@param name string
+function NUI.openPanel(name)
+    local prev = NUI.activePanel
+    if prev and prev ~= name and panelClosers[prev] then
+        panelClosers[prev]()
+    end
+    NUI.activePanel = name
+end
+
+--- Libère le panneau actif (s'il correspond au nom donné).
+---@param name string
+function NUI.closePanel(name)
+    if NUI.activePanel == name then NUI.activePanel = nil end
+end
+
+-- ---------------------------------------------------------------------
 --  Registre des callbacks de menus/dialogues pilotés Lua
 -- ---------------------------------------------------------------------
 

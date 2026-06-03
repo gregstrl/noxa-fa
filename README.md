@@ -1,27 +1,55 @@
 # NOXA FA
 > Framework custom Noxa · NUI 100% custom · oxmysql · Zéro ox_lib visuel
 
-## État actuel — beta-1.4 · 2026-06-03
+## État actuel — beta-1.5 · 2026-06-03
 
 | Système | État | Notes |
 |---|---|---|
 | Core / Framework | ✅ | Comptes, multi-personnages, classe Player autoritaire, statebag répliqué |
 | Spawn & Connexion | ✅ | Deferral (vérif ban), spawn robuste anti-gel (dégel garanti tout chemin) |
 | Création personnage NUI | ✅ | Caméra 3/4, head-blend, traits, overlays, vêtements — édition live + persistance |
-| Inventaire / Items | ✅ | Grille NUI drag&drop, hotbar 1-5, poids, use/jeter/donner — autorité serveur anti-dupe, 8 items |
+| Inventaire / Items | ✅ | Grille NUI drag&drop, hotbar 1-5, poids, use/jeter/donner — autorité serveur anti-dupe, 11 items |
 | Économie & Prix | ✅ | Doctrine salaires (bandes/h justifiées), TVA, taxe virement, loyers, entretien, amendes, plafond cash, catalogue véhicules + flux NUI |
 | Véhicules (concessions, garages) | ✅ | Concession F→S, garage sortir/remiser, fourrière (amende), persistance état (carburant/santé/mods) ; tuning 🟡 |
-| Menu admin NUI (F10) | 🟡 | Commandes staff complètes ; panneau NUI F10 à venir |
-| Panel gestion serveur | ❌ | Non démarré |
-| Anti-cheat & Panel staff | 🟡 | Rate-limit, flag/violations, autoban, logs BDD ; panneau à venir |
+| Menu admin NUI (F10) | ✅ | Panneau RageUI 9 sections (joueurs, véhicules, TP, éco, jobs, sanctions, annonces, logs, serveur) — **rang revérifié serveur + log par action** |
+| Panel gestion serveur | 🟡 | Infos serveur (joueurs/uptime/max) + logs filtrables intégrés au panneau admin |
+| Anti-cheat & Panel staff | ✅ | Rate-limit, flag/violations, autoban, logs BDD + panneau staff NUI (sanctions, historique) |
 | Map · Blips · POI | ✅ | 14 catégories de POI (+ concession), blips, zones de proximité + prompt NUI |
 | Drogues & Trafic | ❌ | Non démarré (prévu prochaine session) |
 | Téléphone NUI | 🟡 | Contacts, SMS temps réel, Twitter, Banque, Carte, Réglages ; appels à venir |
-| Jobs actifs (Police/EMS/Méca) | 🟡 | Whitelist, service, boss-actions, paie société ; gameplay métier à venir |
+| Jobs actifs (Police/EMS/Méca) | ✅ | Police (menottes/fouille/amende/prison/MDT), EMS (ranimer/soigner + état inconscient), Méca (réparer + atelier) — portée & rôle revérifiés serveur |
 | Immobilier (maisons/apparts) | ✅ | Achat, entrée/sortie, verrou, mobilier — 4 paliers, persistance BDD |
 | Météo & Heure serveur | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
+| HUD premium (minimap, vitesse) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 04h core · 2026-06-03
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 08h admin + jobs actifs · 2026-06-03
+
+### Session 08h — Menu Admin NUI (F10) · Jobs actifs (Police / EMS / Méca)
+
+**Menu Admin NUI** (`nui/admin/`, `client/modules/admin/client.lua`, `server/modules/admin/server.lua`)
+- Panneau **style RageUI** haut-gauche (z-index 60), slide-in, navigation **flèches + souris**,
+  ouvert via **F10**. Fond `rgba(10,10,10,0.95)`, bordure accent — 100 % NUI custom.
+- **9 sections** : Joueurs (liste temps réel ID/nom/ping/rang + actions kick/ban/heal/revive/
+  freeze/bring/goto/setmoney/setjob), Véhicules (spawn/réparer/supprimer/couleur),
+  Téléportation (waypoint/XYZ/points sauvegardés), Économie (donner/retirer/définir),
+  Jobs & Grades, Sanctions (+ historique), Annonces (broadcast NUI), Logs (filtrables), Serveur.
+- **Sécurité** : l'ouverture est **accordée par le serveur** (vérif rang) ; chaque action est
+  une simple *intention* — le serveur **revérifie le rang minimal par action** et **journalise**
+  en base (`noxa_logs`). Aucune donnée client n'est de confiance.
+
+**Jobs actifs** (`server/modules/jobs/{police,ems,mechanic}.lua`, `client/modules/jobs/`, `nui/jobs/`)
+- **Police** : `/menottes` `/fouille` `/amende [id] [montant] [raison]` `/emprisonner [id] [min]`
+  + **MDT NUI** (`F11`, effectifs en service). Rôle + service + **portée vérifiés serveur** ;
+  l'amende émet une **facture LSPD** ; l'emprisonnement téléporte et minute la peine
+  (libération revérifiée serveur).
+- **EMS** : `/ranimer` `/soigner` + **état inconscient** autoritaire (`metadata.isDead`) :
+  mort détectée client → déclarée serveur → diffusée aux EMS en service (blip patient) ;
+  respawn auto (bleedout) anti-blocage si aucun EMS.
+- **Mécanicien** : `/reparer` (consomme un **kit de réparation** côté serveur, anim + délai 30 s)
+  + **atelier NUI** (`/atelier` : réparer / nettoyer).
+- **Anti-superposition** : `Noxa.NUI.activePanel` ferme tout panneau actif avant d'en ouvrir un
+  autre (jamais deux panneaux simultanés ; couches z-index respectées).
+- **Items** : ajout `handcuffs`, `medikit`, `repairkit` (catalogue partagé).
 
 ### Session 04h — Inventaire · Véhicules · Météo (+ audit spawn/créateur)
 
@@ -142,7 +170,9 @@ noxa-fa/
     ├── notify/ menus/ hud/ economy/ characters/ banking/
     ├── world/              # prompt d'interaction + jauge carburant
     ├── shop/               # boutique épicerie premium
-    └── phone/              # smartphone (accueil + 6 applications)
+    ├── phone/              # smartphone (accueil + 6 applications)
+    ├── jobs/               # jobs actifs : MDT police · atelier méca · fouille
+    └── admin/              # panneau d'administration (F10, style RageUI)
 ```
 
 ## Principes
@@ -166,9 +196,16 @@ noxa-fa/
 ### Joueur
 - `/service` (**F6**) · `/boss` · `/banque` (**F7**) · `/facturer [id] [montant] [libellé]`
 
+### Jobs actifs
+- **Police** : `/menottes [id]` · `/fouille [id]` · `/amende [id] [montant] [raison]` ·
+  `/emprisonner [id] [minutes]` · `/mdt` (**F11**)
+- **EMS** : `/ranimer [id]` · `/soigner [id]` · `/respawn` (**G**, si inconscient)
+- **Mécanicien** : `/reparer` · `/atelier`
+
 ### Staff (rang vérifié serveur)
-- `/kick` `/ban` `/unban` `/heal` `/revive` `/goto` `/bring` `/announce`
-- `/setmoney` `/job` `/setjobwl` `/setgroup`
+- **Menu admin NUI** : **F10** (`/adminmenu`) — 9 sections, navigation flèches + souris
+- Commandes : `/kick` `/ban` `/unban` `/heal` `/revive` `/goto` `/bring` `/announce`
+  `/setmoney` `/job` `/setjobwl` `/setgroup`
 
 ## Historique — apports beta-1.1
 

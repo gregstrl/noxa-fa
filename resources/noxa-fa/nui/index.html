@@ -25,6 +25,8 @@
     <link rel="stylesheet" href="vehicles/vehicles.css" />
     <link rel="stylesheet" href="phone/phone.css" />
     <link rel="stylesheet" href="economy/economy.css" />
+    <link rel="stylesheet" href="jobs/jobs.css" />
+    <link rel="stylesheet" href="admin/admin.css" />
 </head>
 <body>
     <!-- Couche notifications (toasts) -->
@@ -65,6 +67,12 @@
     <!-- Smartphone (couche dédiée, animation d'ouverture) -->
     <div id="phone"></div>
 
+    <!-- Jobs actifs : MDT police / atelier méca / fouille (z-index 50) -->
+    <div id="jobs" class="hidden"></div>
+
+    <!-- Panneau d'administration (overlay staff, z-index 60) -->
+    <div id="admin" class="hidden"></div>
+
     <!-- Routeur NUI + helpers (chargé en premier) -->
     <script src="shell.js"></script>
     <!-- Modules d'interface -->
@@ -80,5 +88,7 @@
     <script src="shop/shop.js"></script>
     <script src="vehicles/vehicles.js"></script>
     <script src="phone/phone.js"></script>
+    <script src="jobs/jobs.js"></script>
+    <script src="admin/admin.js"></script>
 </body>
 </html>

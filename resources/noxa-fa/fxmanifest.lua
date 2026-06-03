@@ -43,6 +43,10 @@ server_scripts {
     'server/modules/societies/server.lua',
     'server/modules/economy/server.lua',
     'server/modules/jobs/server.lua',
+    -- Jobs actifs (chargés APRÈS le cœur jobs : police / EMS / mécanicien)
+    'server/modules/jobs/police.lua',
+    'server/modules/jobs/ems.lua',
+    'server/modules/jobs/mechanic.lua',
     'server/modules/banking/server.lua',
     'server/modules/characters/server.lua',
     'server/modules/needs/server.lua',
@@ -76,6 +80,10 @@ client_scripts {
     'client/modules/inventory/client.lua',
     'client/modules/economy/client.lua',
     'client/modules/jobs/client.lua',
+    -- Jobs actifs côté client (effets locaux pilotés serveur)
+    'client/modules/jobs/police.lua',
+    'client/modules/jobs/ems.lua',
+    'client/modules/jobs/mechanic.lua',
     'client/modules/banking/client.lua',
     'client/modules/admin/client.lua',
     -- Monde : carte (blips), zones de proximité, boutique, carburant
@@ -127,4 +135,10 @@ files {
     'nui/vehicles/vehicles.js',
     'nui/phone/phone.css',
     'nui/phone/phone.js',
+    -- Jobs actifs (MDT police / atelier méca / fouille)
+    'nui/jobs/jobs.css',
+    'nui/jobs/jobs.js',
+    -- Panneau d'administration NUI (F10)
+    'nui/admin/admin.css',
+    'nui/admin/admin.js',
 }
