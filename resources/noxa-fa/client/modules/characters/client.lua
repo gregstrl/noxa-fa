@@ -32,8 +32,9 @@ end)
 
 RegisterNetEvent('noxa:char:createResult', function(res)
     if res.ok then
-        Noxa.UI.notify('Personnage créé avec succès.', 'success')
-        Chars.requestList()   -- recharge la grille (l'écran reste ouvert)
+        Noxa.UI.notify('Personnage créé. Personnalisez votre apparence.', 'success')
+        -- Enchaîne directement sur le créateur d'apparence (caméra + édition live).
+        Noxa.Creator.start(res.id, res.gender or 0)
     else
         local map = { maxSlots = 'Nombre maximum de personnages atteint.', name = 'Nom invalide.',
                       db = 'Erreur base de données.' }
@@ -44,8 +45,19 @@ end)
 RegisterNetEvent('noxa:char:selected', function(data)
     -- Personnage chargé serveur : on ferme l'UI, libère le focus et spawn.
     current.active = false
+    -- Si on sort du créateur, on détruit d'abord la caméra de création.
+    if Noxa.Creator.isActive() then Noxa.Creator.finish() end
+    NUI.send('creator', 'close')
     NUI.send('characters', 'close')
     NUI.releaseAll()
+
+    -- Appliquer l'apparence persistée (ou un défaut propre si absente : legacy).
+    local app = data.appearance
+    if type(app) ~= 'table' or next(app) == nil then
+        app = Noxa.Appearance.default(data.gender or 0)
+    end
+    Noxa.Appearance.apply(app)
+
     Noxa.Spawn.toPosition(data.position)
     Noxa.Spawn.release()
     NUI.send('hud', 'show')

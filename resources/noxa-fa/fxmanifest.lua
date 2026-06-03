@@ -60,6 +60,9 @@ client_scripts {
     'client/core/nui.lua',
     'client/core/spawn.lua',
     'client/core/ui.lua',
+    -- Personnages : apparence + créateur AVANT le pilote de sélection.
+    'client/modules/characters/appearance.lua',
+    'client/modules/characters/creator.lua',
     'client/modules/characters/client.lua',
     'client/modules/hud/client.lua',
     'client/modules/economy/client.lua',
@@ -97,6 +100,8 @@ files {
     'nui/menus/menus.js',
     'nui/characters/characters.css',
     'nui/characters/characters.js',
+    'nui/creator/creator.css',
+    'nui/creator/creator.js',
     'nui/banking/banking.css',
     'nui/banking/banking.js',
     'nui/world/world.css',

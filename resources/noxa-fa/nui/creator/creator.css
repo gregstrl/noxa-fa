@@ -1,0 +1,95 @@
+/* =====================================================================
+   NOXA FA — Créateur de personnage (NUI custom, zéro ox_lib)
+   Sidebar gauche premium ; le reste de l'écran reste transparent pour
+   laisser voir le ped et la caméra 3/4 face pilotés côté Lua.
+   ===================================================================== */
+
+#creator { position: fixed; inset: 0; z-index: 45; pointer-events: none; }
+#creator.hidden { display: none; }
+
+/* Panneau latéral gauche ------------------------------------------------- */
+.cr-panel {
+    pointer-events: auto;
+    position: absolute;
+    top: 0; left: 0; bottom: 0;
+    width: 372px;
+    display: flex;
+    flex-direction: column;
+    background: linear-gradient(180deg, rgba(10,10,15,0.96), rgba(17,24,39,0.94));
+    border-right: 1px solid var(--border-strong);
+    box-shadow: var(--shadow-lg);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    animation: slideInLeft .35s cubic-bezier(.2,.9,.3,1) both;
+}
+@keyframes slideInLeft { from { opacity:0; transform: translateX(-40px);} to {opacity:1; transform:translateX(0);} }
+
+.cr-head { padding: 24px 24px 16px; border-bottom: 1px solid var(--border); }
+.cr-logo { font-family: var(--font-display); font-weight: 800; font-size: 20px; letter-spacing: .14em;
+    background: var(--accent-grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.cr-sub { font-size: 12.5px; color: var(--text-dim); margin-top: 4px; }
+
+/* Onglets --------------------------------------------------------------- */
+.cr-tabs { display: flex; gap: 4px; padding: 12px 16px 0; flex-wrap: wrap; }
+.cr-tab {
+    flex: 1; min-width: 60px; text-align: center;
+    font-size: 12px; font-weight: 600; color: var(--text-dim);
+    padding: 9px 6px; border-radius: var(--r-sm); cursor: pointer;
+    border: 1px solid transparent; transition: all .15s ease;
+}
+.cr-tab:hover { color: var(--text); background: var(--surface-glass); }
+.cr-tab.active { color: var(--text); background: var(--accent-soft); border-color: rgba(99,102,241,.4); }
+
+/* Corps défilant -------------------------------------------------------- */
+.cr-body { flex: 1; overflow-y: auto; padding: 16px 20px 22px; }
+.cr-section { display: none; animation: fadeIn .2s ease both; }
+.cr-section.active { display: block; }
+
+/* Contrôles ------------------------------------------------------------- */
+.cr-ctl { margin-bottom: 16px; }
+.cr-ctl-label { display: flex; justify-content: space-between; align-items: baseline;
+    font-size: 12px; font-weight: 600; color: var(--text-soft); margin-bottom: 7px; }
+.cr-ctl-val { font-size: 11.5px; color: var(--accent-2); font-variant-numeric: tabular-nums; }
+
+/* Slider custom */
+.cr-slider { -webkit-appearance: none; appearance: none; width: 100%; height: 5px;
+    border-radius: 4px; background: var(--bg-2); outline: none; cursor: pointer; }
+.cr-slider::-webkit-slider-thumb { -webkit-appearance: none; width: 16px; height: 16px; border-radius: 50%;
+    background: var(--accent-grad); box-shadow: 0 0 0 4px rgba(99,102,241,.18); cursor: pointer; transition: transform .1s; }
+.cr-slider::-webkit-slider-thumb:hover { transform: scale(1.15); }
+
+/* Stepper ◄ valeur ► */
+.cr-stepper { display: flex; align-items: stretch; gap: 6px; }
+.cr-stepper button {
+    width: 38px; font-size: 16px; color: var(--text); background: var(--bg-2);
+    border: 1px solid var(--border-strong); border-radius: var(--r-sm); cursor: pointer; transition: all .14s; }
+.cr-stepper button:hover { background: var(--accent-soft); border-color: var(--accent); }
+.cr-stepper .cr-step-val { flex: 1; text-align: center; align-self: center;
+    font-size: 14px; font-weight: 600; font-variant-numeric: tabular-nums; color: var(--text); }
+
+/* Segmenté (genre) */
+.cr-seg { display: flex; background: var(--bg-0); border: 1px solid var(--border-strong);
+    border-radius: var(--r-sm); padding: 4px; gap: 4px; }
+.cr-seg-opt { flex: 1; text-align: center; padding: 9px; font-size: 13px; font-weight: 600;
+    color: var(--text-dim); border-radius: 6px; cursor: pointer; transition: all .15s; }
+.cr-seg-opt.active { color: #fff; background: var(--accent-grad); }
+
+.cr-group-title { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--text-faint); margin: 6px 0 12px; }
+
+/* Pied : confirmation --------------------------------------------------- */
+.cr-foot { padding: 16px 20px 22px; border-top: 1px solid var(--border); display: flex; gap: 10px; }
+.cr-foot .btn { flex: 1; }
+
+/* Contrôles caméra flottants (bas centre) ------------------------------- */
+.cr-cam { pointer-events: auto; position: absolute; bottom: 34px; left: calc(50% + 186px);
+    transform: translateX(-50%); display: flex; gap: 10px; align-items: center; }
+.cr-cam-zones { display: flex; gap: 4px; background: rgba(10,10,15,0.85); border: 1px solid var(--border-strong);
+    border-radius: var(--r-md); padding: 5px; backdrop-filter: blur(10px); }
+.cr-cam-zone { font-size: 12px; font-weight: 600; color: var(--text-dim); padding: 8px 14px;
+    border-radius: var(--r-sm); cursor: pointer; transition: all .15s; }
+.cr-cam-zone.active { color: #fff; background: var(--accent-soft); }
+.cr-rot { width: 46px; height: 46px; font-size: 20px; color: var(--text); background: rgba(10,10,15,0.85);
+    border: 1px solid var(--border-strong); border-radius: 50%; cursor: pointer; backdrop-filter: blur(10px);
+    transition: all .15s; display: flex; align-items: center; justify-content: center; }
+.cr-rot:hover { border-color: var(--accent); background: var(--accent-soft); transform: translateY(-2px); }

@@ -97,6 +97,16 @@ function DB.saveCharacter(char)
     })
 end
 
+--- Persiste l'apparence d'un personnage (créateur / coiffeur), ownership vérifié.
+---@param charId integer
+---@param accountId integer
+---@param appearanceJson string
+function DB.saveAppearance(charId, accountId, appearanceJson)
+    return MySQL.update.await(
+        'UPDATE noxa_characters SET appearance = ? WHERE id = ? AND account_id = ?',
+        { appearanceJson, charId, accountId })
+end
+
 --- Vérifie l'unicité d'un citizenid avant attribution.
 function DB.citizenIdExists(citizenid)
     local row = MySQL.scalar.await(

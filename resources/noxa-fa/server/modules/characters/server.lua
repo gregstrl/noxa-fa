@@ -122,7 +122,118 @@ S.onNet('noxa:char:create', function(src, _, payload)
 
     DB.log('character', 'info', acc.license,
         ('Création personnage %s %s (%s)'):format(firstname, lastname, row.citizenid))
-    TriggerClientEvent('noxa:char:createResult', src, { ok = true, id = row.id })
+    TriggerClientEvent('noxa:char:createResult', src, { ok = true, id = row.id, gender = gender })
+end, { requireLoaded = false })
+
+-- ---------------------------------------------------------------------
+--  Apparence : validation + persistance (créateur de personnage)
+--  Le client n'est jamais autoritaire : on borne chaque valeur côté serveur
+--  avant de l'écrire (anti-injection / valeurs hors plage / crash client).
+-- ---------------------------------------------------------------------
+
+--- Borne un nombre dans [min,max] (retourne def si invalide).
+local function num(v, min, max, def)
+    v = tonumber(v)
+    if not v then return def end
+    if v < min then return min end
+    if v > max then return max end
+    return v
+end
+
+--- Nettoie une table d'apparence reçue du client (structure stricte, bornée).
+local function sanitizeAppearance(raw)
+    if type(raw) ~= 'table' then return nil end
+    local gender = (tonumber(raw.gender) == 1) and 1 or 0
+    local out = {
+        gender = gender,
+        model = gender == 1 and 'mp_f_freemode_01' or 'mp_m_freemode_01',
+        headBlend = {}, faceFeatures = {}, overlays = {},
+        hair = {}, components = {}, props = {}, eyeColor = 0,
+    }
+    local hb = type(raw.headBlend) == 'table' and raw.headBlend or {}
+    out.headBlend = {
+        shapeFirst  = math.floor(num(hb.shapeFirst, 0, 45, 0)),
+        shapeSecond = math.floor(num(hb.shapeSecond, 0, 45, 0)),
+        skinFirst   = math.floor(num(hb.skinFirst, 0, 45, 0)),
+        skinSecond  = math.floor(num(hb.skinSecond, 0, 45, 0)),
+        shapeMix    = num(hb.shapeMix, 0.0, 1.0, 0.5),
+        skinMix     = num(hb.skinMix, 0.0, 1.0, 0.5),
+    }
+    if type(raw.faceFeatures) == 'table' then
+        for k, v in pairs(raw.faceFeatures) do
+            local i = tonumber(k)
+            if i and i >= 0 and i <= 19 then out.faceFeatures[tostring(i)] = num(v, -1.0, 1.0, 0.0) end
+        end
+    end
+    if type(raw.overlays) == 'table' then
+        for k, ov in pairs(raw.overlays) do
+            local i = tonumber(k)
+            if i and i >= 0 and i <= 12 and type(ov) == 'table' then
+                out.overlays[tostring(i)] = {
+                    value = math.floor(num(ov.value, 0, 255, 0)),
+                    colour = math.floor(num(ov.colour, 0, 63, 0)),
+                    secondColour = math.floor(num(ov.secondColour, 0, 63, 0)),
+                    opacity = num(ov.opacity, 0.0, 1.0, 1.0),
+                }
+            end
+        end
+    end
+    local hair = type(raw.hair) == 'table' and raw.hair or {}
+    out.hair = {
+        style = math.floor(num(hair.style, 0, 80, 0)),
+        color = math.floor(num(hair.color, 0, 63, 0)),
+        highlight = math.floor(num(hair.highlight, 0, 63, 0)),
+    }
+    out.eyeColor = math.floor(num(raw.eyeColor, 0, 31, 0))
+    if type(raw.components) == 'table' then
+        for k, c in pairs(raw.components) do
+            local id = tonumber(k)
+            if id and id >= 0 and id <= 11 and type(c) == 'table' then
+                out.components[tostring(id)] = {
+                    drawable = math.floor(num(c.drawable, 0, 500, 0)),
+                    texture = math.floor(num(c.texture, 0, 100, 0)),
+                }
+            end
+        end
+    end
+    if type(raw.props) == 'table' then
+        for k, p in pairs(raw.props) do
+            local id = tonumber(k)
+            if id and id >= 0 and id <= 12 and type(p) == 'table' then
+                out.props[tostring(id)] = {
+                    drawable = math.floor(num(p.drawable, -1, 200, -1)),
+                    texture = math.floor(num(p.texture, 0, 100, 0)),
+                }
+            end
+        end
+    end
+    return out
+end
+
+S.onNet('noxa:char:saveAppearance', function(src, _, payload)
+    local acc = getAccount(src)
+    if not acc then return end
+    if type(payload) ~= 'table' then return S.flag(src, 'saveAppearance payload invalide') end
+    local charId = tonumber(payload.id)
+    if not charId then return S.flag(src, 'saveAppearance id invalide') end
+
+    local row = DB.getOwnedCharacter(charId, acc.id)
+    if not row then return S.flag(src, ('saveAppearance non possédé (id=%s)'):format(charId)) end
+
+    local appearance = sanitizeAppearance(payload.appearance)
+    if not appearance then return S.flag(src, 'saveAppearance apparence invalide') end
+
+    DB.saveAppearance(charId, acc.id, U.jsonEncode(appearance))
+
+    -- Charge le personnage et déclenche le spawn (l'apparence vient d'être figée).
+    row.appearance = U.jsonEncode(appearance)
+    local ply = Noxa.Players.load(src, row, acc)
+    TriggerClientEvent('noxa:char:selected', src, {
+        citizenid  = ply.citizenid,
+        position   = ply.position,
+        appearance = ply.appearance,
+        gender     = ply.gender,
+    })
 end, { requireLoaded = false })
 
 -- ---------------------------------------------------------------------
@@ -143,9 +254,10 @@ S.onNet('noxa:char:select', function(src, _, charId)
 
     local ply = Noxa.Players.load(src, row, acc)
     TriggerClientEvent('noxa:char:selected', src, {
-        citizenid = ply.citizenid,
-        position  = ply.position,
+        citizenid  = ply.citizenid,
+        position   = ply.position,
         appearance = ply.appearance,
+        gender     = ply.gender,
     })
 end, { requireLoaded = false })
 
