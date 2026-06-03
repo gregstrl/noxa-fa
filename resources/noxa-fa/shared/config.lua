@@ -38,6 +38,12 @@ C.Security = {
     -- Limitation de débit des events réseau (par joueur)
     rateLimit = {
         default     = { count = 20, window = 10000 },  -- 20 appels / 10s par event
+        -- Inventaire : la réorganisation (drag&drop) et l'usage peuvent être
+        -- rapides — limites plus larges pour ne pas flagger un jeu normal.
+        ['noxa:inv:move']    = { count = 60, window = 10000 },
+        ['noxa:inv:use']     = { count = 30, window = 10000 },
+        ['noxa:inv:request'] = { count = 30, window = 10000 },
+        ['noxa:inv:drop']    = { count = 30, window = 10000 },
     },
     -- Bannir automatiquement après N violations critiques détectées
     autobanThreshold = 5,
@@ -269,6 +275,49 @@ C.POI = {
         points = {
             { x = 925.00,   y = 46.00, z = 81.10 },
         },
+    },
+    dealership = {
+        label = 'Concession automobile',
+        blip  = { sprite = 326, color = 46, scale = 0.90, shortRange = false },
+        interact = { type = 'dealership', prompt = 'Parcourir la concession' },
+        points = {
+            { x = -56.70,  y = -1096.60, z = 26.42 },   -- Premium Deluxe Motorsport
+            { x = -1255.60, y = -361.00, z = 36.91 },   -- showroom secondaire
+        },
+    },
+}
+
+-- =====================================================================
+--  VÉHICULES — concession, garages & fourrière (état persisté en BDD).
+--  Le catalogue/prix vit dans shared/economy/vehicles.lua (C.Vehicles).
+-- =====================================================================
+C.VehicleConfig = {
+    defaultGarage = 'central',     -- garage unique (foundation : tous les POI 'garage')
+    impoundFee    = 5000,          -- amende de récupération en fourrière
+    -- Point de sortie d'un véhicule depuis la concession (livraison immédiate).
+    dealerSpawn   = { x = -30.50, y = -1095.50, z = 26.40, heading = 70.0 },
+    -- Décalage de sortie au garage (devant le ped) si aucun point libre détecté.
+    garageSpawnOffset = 3.0,
+    plateFormat   = 'NX%05d',      -- gabarit de plaque (numérique borné)
+}
+
+-- =====================================================================
+--  MONDE — Cycle jour/nuit & météo (autorité serveur, broadcast 30s).
+--  Le serveur fait foi du temps écoulé ; le client interpole entre deux
+--  synchros et verrouille la météo (pas de cycle aléatoire GTA).
+-- =====================================================================
+C.World = {
+    startHour     = 8,           -- heure de démarrage du serveur (au boot)
+    -- Échelle de temps : durée réelle (ms) d'UNE minute en jeu.
+    -- 2000 ms/min => journée complète en 48 min réelles (rythme RP confortable).
+    msPerMinute   = 2000,
+    broadcast     = 30 * 1000,   -- intervalle de diffusion de l'heure/météo
+    transition    = 15,          -- durée de transition météo (secondes)
+    -- Rotation météo : durée réelle (ms) de chaque palier + séquence réaliste.
+    weatherHold   = 10 * 60 * 1000,
+    weatherCycle  = {
+        'EXTRASUNNY', 'CLEAR', 'CLOUDS', 'OVERCAST',
+        'RAIN', 'THUNDER', 'CLEARING', 'CLOUDS',
     },
 }
 

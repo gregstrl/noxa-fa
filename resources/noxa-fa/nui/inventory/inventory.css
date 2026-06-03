@@ -1,0 +1,137 @@
+/* =====================================================================
+   NOXA FA — Inventaire (grille + hotbar + menu contextuel) — NUI custom
+   Règles FiveM : conteneurs pointer-events:none, interactif uniquement sur
+   les éléments cliquables. Fond panneau rgba sombre — jamais opaque sur body.
+   ===================================================================== */
+
+/* Hotbar permanente (informative, jamais bloquante) -------------------- */
+.inv-hotbar {
+    position: fixed;
+    left: 50%;
+    bottom: 22px;
+    transform: translateX(-50%);
+    display: flex;
+    gap: 8px;
+    z-index: 35;
+    pointer-events: none;
+}
+.inv-hotbar.hidden { display: none !important; }
+.hb-slot {
+    width: 58px; height: 58px;
+    border-radius: var(--r-sm);
+    background: rgba(10, 10, 15, 0.78);
+    border: 1px solid var(--border);
+    backdrop-filter: blur(8px);
+    display: flex; align-items: center; justify-content: center;
+    position: relative;
+    box-shadow: var(--shadow-md);
+}
+.hb-slot .hb-key {
+    position: absolute; top: 3px; left: 5px;
+    font-size: 10px; font-weight: 700; color: var(--text-faint);
+}
+.hb-slot .hb-emoji { font-size: 26px; line-height: 1; }
+.hb-slot .hb-count {
+    position: absolute; bottom: 3px; right: 5px;
+    font-size: 11px; font-weight: 700; color: var(--text-soft);
+}
+.hb-slot.filled { border-color: var(--border-strong); }
+
+/* Panneau d'inventaire plein écran ------------------------------------- */
+#inventory { position: fixed; inset: 0; z-index: 55; pointer-events: none; }
+#inventory.hidden { display: none !important; }
+.inv-wrap {
+    position: absolute; inset: 0;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(120% 120% at 50% 0%, rgba(99,102,241,0.10), transparent 55%), rgba(5, 7, 12, 0.62);
+    backdrop-filter: blur(8px);
+}
+.inv-panel {
+    pointer-events: auto;
+    width: min(840px, 92vw);
+    max-height: 86vh;
+    background: rgba(10, 10, 15, 0.95);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-lg);
+    box-shadow: var(--shadow-lg);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+    animation: inv-pop 0.18s ease;
+}
+@keyframes inv-pop { from { opacity: 0; transform: scale(0.97) translateY(8px); } to { opacity: 1; transform: none; } }
+
+.inv-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 18px 22px;
+    border-bottom: 1px solid var(--border);
+    background: var(--accent-grad-soft);
+}
+.inv-title { font-family: var(--font-display); font-size: 20px; font-weight: 700; }
+.inv-title small { display: block; font-family: var(--font); font-size: 12px; color: var(--text-dim); font-weight: 500; margin-top: 2px; }
+
+/* Jauge de poids */
+.inv-weight { min-width: 220px; }
+.inv-weight-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-dim); margin-bottom: 6px; }
+.inv-weight-bar { height: 8px; border-radius: 99px; background: var(--bg-2); overflow: hidden; }
+.inv-weight-fill { height: 100%; width: 0%; border-radius: 99px; background: var(--accent-grad); transition: width 0.25s ease, background 0.25s ease; }
+.inv-weight-fill.warn { background: linear-gradient(135deg, #f59e0b, #ef4444); }
+
+/* Grille des emplacements */
+.inv-grid {
+    padding: 18px 22px;
+    display: grid;
+    grid-template-columns: repeat(6, 1fr);
+    gap: 10px;
+    overflow-y: auto;
+}
+.inv-grid::-webkit-scrollbar { width: 8px; }
+.inv-grid::-webkit-scrollbar-thumb { background: var(--bg-3); border-radius: 99px; }
+
+.slot {
+    aspect-ratio: 1 / 1;
+    border-radius: var(--r-sm);
+    background: var(--surface-glass);
+    border: 1px solid var(--border);
+    position: relative;
+    display: flex; align-items: center; justify-content: center;
+    transition: border-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+}
+.slot.empty { background: rgba(31, 41, 55, 0.28); }
+.slot.filled { cursor: grab; }
+.slot.filled:hover { border-color: var(--accent); box-shadow: var(--glow); transform: translateY(-2px); }
+.slot.drag-over { border-color: var(--accent-2); border-style: dashed; }
+.slot .s-emoji { font-size: 30px; line-height: 1; pointer-events: none; }
+.slot .s-count {
+    position: absolute; bottom: 4px; right: 6px;
+    font-size: 12px; font-weight: 800; color: var(--text);
+    text-shadow: 0 1px 3px #000; pointer-events: none;
+}
+.slot .s-label {
+    position: absolute; bottom: 0; left: 0; right: 0;
+    font-size: 9px; text-align: center; color: var(--text-dim);
+    padding: 2px; background: linear-gradient(transparent, rgba(0,0,0,0.65));
+    border-radius: 0 0 var(--r-sm) var(--r-sm);
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; pointer-events: none;
+}
+.slot .s-hb {
+    position: absolute; top: 3px; left: 5px; font-size: 10px;
+    font-weight: 800; color: var(--accent-2); pointer-events: none;
+}
+
+.inv-foot { padding: 12px 22px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; }
+.inv-hint { font-size: 12px; color: var(--text-faint); }
+
+/* Menu contextuel (clic droit) */
+.inv-ctx {
+    position: fixed; z-index: 70;
+    background: rgba(10, 10, 15, 0.97);
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-sm);
+    box-shadow: var(--shadow-lg);
+    padding: 6px; min-width: 150px;
+    pointer-events: auto;
+}
+.inv-ctx-head { font-size: 12px; color: var(--text-dim); padding: 6px 10px; border-bottom: 1px solid var(--border); margin-bottom: 4px; }
+.inv-ctx-item { padding: 9px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; display: flex; gap: 8px; align-items: center; }
+.inv-ctx-item:hover { background: var(--accent-soft); color: var(--text); }
+.inv-ctx-item.danger:hover { background: rgba(239, 68, 68, 0.16); color: #fca5a5; }

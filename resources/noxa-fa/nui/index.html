@@ -15,12 +15,14 @@
     <!-- Modules d'interface (chacun dans son dossier dédié) -->
     <link rel="stylesheet" href="notify/notify.css" />
     <link rel="stylesheet" href="hud/hud.css" />
+    <link rel="stylesheet" href="inventory/inventory.css" />
     <link rel="stylesheet" href="menus/menus.css" />
     <link rel="stylesheet" href="characters/characters.css" />
     <link rel="stylesheet" href="creator/creator.css" />
     <link rel="stylesheet" href="banking/banking.css" />
     <link rel="stylesheet" href="world/world.css" />
     <link rel="stylesheet" href="shop/shop.css" />
+    <link rel="stylesheet" href="vehicles/vehicles.css" />
     <link rel="stylesheet" href="phone/phone.css" />
     <link rel="stylesheet" href="economy/economy.css" />
 </head>
@@ -30,6 +32,10 @@
 
     <!-- HUD permanent -->
     <div id="hud" class="hud hidden"></div>
+
+    <!-- Hotbar permanente (raccourcis 1-5) + grille d'inventaire -->
+    <div id="inv-hotbar" class="inv-hotbar hidden"></div>
+    <div id="inventory" class="hidden"></div>
 
     <!-- Flux de transactions économiques (toasts +/− sous le HUD argent) -->
     <div id="economy-feed"></div>
@@ -49,6 +55,9 @@
     <!-- Plein écran : boutique (épicerie) -->
     <div id="shop" class="fullscreen hidden"></div>
 
+    <!-- Plein écran : concession / garage / fourrière -->
+    <div id="vehicles" class="hidden"></div>
+
     <!-- Monde : prompt d'interaction + jauge carburant (informatif) -->
     <div id="world-prompt"></div>
     <div id="fuel-gauge" class="hidden"></div>
@@ -61,6 +70,7 @@
     <!-- Modules d'interface -->
     <script src="notify/notify.js"></script>
     <script src="hud/hud.js"></script>
+    <script src="inventory/inventory.js"></script>
     <script src="economy/economy.js"></script>
     <script src="menus/menus.js"></script>
     <script src="characters/characters.js"></script>
@@ -68,6 +78,7 @@
     <script src="banking/banking.js"></script>
     <script src="world/world.js"></script>
     <script src="shop/shop.js"></script>
+    <script src="vehicles/vehicles.js"></script>
     <script src="phone/phone.js"></script>
 </body>
 </html>

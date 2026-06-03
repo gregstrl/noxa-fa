@@ -25,6 +25,8 @@ shared_scripts {
     'shared/economy/antiinflation.lua',
     'shared/enums.lua',
     'shared/utils.lua',
+    -- Catalogue d'objets & réglages d'inventaire (lu client + serveur).
+    'shared/items.lua',
 }
 
 -- =====================================================================
@@ -44,10 +46,16 @@ server_scripts {
     'server/modules/banking/server.lua',
     'server/modules/characters/server.lua',
     'server/modules/needs/server.lua',
+    -- Inventaire : étend la classe Player (après core), utilise Needs à l'usage.
+    'server/modules/inventory/server.lua',
     'server/modules/admin/server.lua',
     -- Monde & gameplay (après needs : la boutique applique des effets de besoins)
     'server/modules/world/shop.lua',
     'server/modules/world/fuel.lua',
+    -- Heure & météo serveur (autorité + broadcast 30s).
+    'server/modules/world/time.lua',
+    -- Véhicules : concession/garage/fourrière (utilise Noxa.Economy au runtime).
+    'server/modules/vehicles/server.lua',
     'server/modules/properties/server.lua',
     'server/modules/phone/server.lua',
     'server/main.lua',
@@ -65,6 +73,7 @@ client_scripts {
     'client/modules/characters/creator.lua',
     'client/modules/characters/client.lua',
     'client/modules/hud/client.lua',
+    'client/modules/inventory/client.lua',
     'client/modules/economy/client.lua',
     'client/modules/jobs/client.lua',
     'client/modules/banking/client.lua',
@@ -74,6 +83,10 @@ client_scripts {
     'client/modules/world/zones.lua',
     'client/modules/world/shop.lua',
     'client/modules/world/fuel.lua',
+    -- Synchro heure & météo (interpolation + verrou météo).
+    'client/modules/world/sync.lua',
+    -- Véhicules : concession/garage/fourrière (s'enregistre via World.on).
+    'client/modules/vehicles/client.lua',
     -- Immobilier & téléphone
     'client/modules/properties/client.lua',
     'client/modules/phone/client.lua',
@@ -94,6 +107,8 @@ files {
     'nui/notify/notify.js',
     'nui/hud/hud.css',
     'nui/hud/hud.js',
+    'nui/inventory/inventory.css',
+    'nui/inventory/inventory.js',
     'nui/economy/economy.css',
     'nui/economy/economy.js',
     'nui/menus/menus.css',
@@ -108,6 +123,8 @@ files {
     'nui/world/world.js',
     'nui/shop/shop.css',
     'nui/shop/shop.js',
+    'nui/vehicles/vehicles.css',
+    'nui/vehicles/vehicles.js',
     'nui/phone/phone.css',
     'nui/phone/phone.js',
 }

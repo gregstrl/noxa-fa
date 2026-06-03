@@ -1,27 +1,58 @@
 # NOXA FA
 > Framework custom Noxa · NUI 100% custom · oxmysql · Zéro ox_lib visuel
 
-## État actuel — beta-1.3 · 2026-06-02
+## État actuel — beta-1.4 · 2026-06-03
 
 | Système | État | Notes |
 |---|---|---|
 | Core / Framework | ✅ | Comptes, multi-personnages, classe Player autoritaire, statebag répliqué |
-| Spawn & Connexion | ✅ | Deferral (vérif ban), spawn contrôlé serveur |
-| Création personnage NUI | ✅ | Sélection/création plein écran custom |
-| Inventaire / Items | ❌ | Champ `inventory` réservé, système à venir |
+| Spawn & Connexion | ✅ | Deferral (vérif ban), spawn robuste anti-gel (dégel garanti tout chemin) |
+| Création personnage NUI | ✅ | Caméra 3/4, head-blend, traits, overlays, vêtements — édition live + persistance |
+| Inventaire / Items | ✅ | Grille NUI drag&drop, hotbar 1-5, poids, use/jeter/donner — autorité serveur anti-dupe, 8 items |
 | Économie & Prix | ✅ | Doctrine salaires (bandes/h justifiées), TVA, taxe virement, loyers, entretien, amendes, plafond cash, catalogue véhicules + flux NUI |
-| Véhicules (concessions, garages) | 🟡 | Catalogue concession F→S (prix justifiés/h de jeu) + carburant persistant ; spawn/garage à venir |
+| Véhicules (concessions, garages) | ✅ | Concession F→S, garage sortir/remiser, fourrière (amende), persistance état (carburant/santé/mods) ; tuning 🟡 |
 | Menu admin NUI (F10) | 🟡 | Commandes staff complètes ; panneau NUI F10 à venir |
 | Panel gestion serveur | ❌ | Non démarré |
 | Anti-cheat & Panel staff | 🟡 | Rate-limit, flag/violations, autoban, logs BDD ; panneau à venir |
-| Map · Blips · POI | ✅ | 13 catégories de POI, blips, zones de proximité + prompt NUI |
+| Map · Blips · POI | ✅ | 14 catégories de POI (+ concession), blips, zones de proximité + prompt NUI |
 | Drogues & Trafic | ❌ | Non démarré (prévu prochaine session) |
 | Téléphone NUI | 🟡 | Contacts, SMS temps réel, Twitter, Banque, Carte, Réglages ; appels à venir |
 | Jobs actifs (Police/EMS/Méca) | 🟡 | Whitelist, service, boss-actions, paie société ; gameplay métier à venir |
 | Immobilier (maisons/apparts) | ✅ | Achat, entrée/sortie, verrou, mobilier — 4 paliers, persistance BDD |
-| Météo & Heure serveur | ❌ | Non démarré |
+| Météo & Heure serveur | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 00h économie · 2026-06-02
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 04h core · 2026-06-03
+
+### Session 04h — Inventaire · Véhicules · Météo (+ audit spawn/créateur)
+
+**Bugfix spawn & créateur (audit)** — `client/core/spawn.lua` garantit le dégel
+sur tout chemin (position nil, collision non chargée, timeout) ; le créateur de
+personnage gère caméra/focus proprement et `noxa:char:selected` force
+`SetNuiFocus(false,false)` via `NUI.releaseAll()`. Conformes, aucune régression.
+
+**Inventaire / Items** (`shared/items.lua`, `server/modules/inventory/`, `nui/inventory/`)
+- Catalogue partagé (8 items : pain, eau, sandwich, jus, repas, bandage, téléphone, crochet).
+- Modèle **slot-based** sur l'objet `Player`, persisté en JSON dans
+  `noxa_characters.inventory` — **source unique en mémoire = anti-dupe**. Poids borné
+  (50 kg), 30 slots. API serveur complète + exports inter-modules.
+- Effets d'usage branchés sur Besoins (faim/soif/stress), soin client, hooks d'action.
+- NUI : grille drag&drop (déplacement/fusion), **hotbar permanente 1-5**, jauge de poids,
+  menu contextuel (Utiliser/Donner/Jeter). Touche **I**. Dotation de départ unique.
+
+**Véhicules** (`server/modules/vehicles/`, `client/modules/vehicles/`, `nui/vehicles/`)
+- **Concession** : catalogue par classe (prix taxés), achat par virement, plaque serveur
+  **unique**, livraison au garage ; débit + rollback atomiques.
+- **Garage** : sortir/remiser (spawn + mods, lecture carburant/santé, persistance BDD).
+- **Fourrière** : récupération contre amende (banque puis espèces).
+- Anti-vol : ownership vérifié partout ; transitions `stored↔out↔impound`
+  **atomiques en SQL** (anti double-sortie). Orphelins « sortis » → fourrière au boot.
+
+**Météo & Heure** (`server/modules/world/time.lua`, `client/modules/world/sync.lua`)
+- Horloge **autoritaire** (journée = 48 min réelles), interpolée client chaque seconde.
+- Météo **rotative déterministe** (8 paliers), verrouillée client (pas de cycle GTA),
+  broadcast 30s + synchro à la connexion. `noxa:setweather <TYPE>` (admin).
+
+**BDD** — table miroir `noxa_items` + migration `002_items.sql`.
 
 ### Session 00h — Économie : conception, implémentation & équilibrage
 

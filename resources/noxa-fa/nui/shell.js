@@ -49,6 +49,8 @@ const Noxa = (() => {
         if (window.NoxaMenu && NoxaMenu.handleEscape()) return;
         if (window.NoxaBanking && NoxaBanking.handleEscape()) return;
         if (window.NoxaShop && NoxaShop.handleEscape()) return;
+        if (window.NoxaInv && NoxaInv.handleEscape()) return;
+        if (window.NoxaVeh && NoxaVeh.handleEscape()) return;
         if (window.NoxaPhone && NoxaPhone.handleEscape()) return;
         // (la sélection de personnage ne se ferme pas à l'Échap : phase obligatoire)
     });

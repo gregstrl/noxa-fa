@@ -272,6 +272,73 @@ function DB.countOwnedVehicles(cid)
     return tonumber(n) or 0
 end
 
+--- Une plaque existe-t-elle déjà ? (garantie d'unicité avant insertion)
+function DB.plateExists(plate)
+    return (MySQL.scalar.await('SELECT 1 FROM noxa_vehicles WHERE plate = ?', { plate })) ~= nil
+end
+
+--- Crée un véhicule possédé (concession). Plaque déjà garantie unique.
+---@return boolean ok
+function DB.createVehicle(cid, model, plate, garage)
+    local id = MySQL.insert.await([[
+        INSERT INTO noxa_vehicles (owner_cid, plate, model, garage, state, fuel, engine, body)
+        VALUES (?, ?, ?, ?, 'stored', 100, 1000.0, 1000.0)
+    ]], { cid, plate, model, garage or 'central' })
+    return id ~= nil
+end
+
+--- Véhicules d'un citoyen (option : limités à un garage). Pour la NUI garage.
+---@return table[]
+function DB.getOwnedVehicles(cid, garage)
+    if garage then
+        return MySQL.query.await(
+            'SELECT plate, model, garage, state, fuel, engine, body, mods FROM noxa_vehicles WHERE owner_cid = ? AND garage = ?',
+            { cid, garage }) or {}
+    end
+    return MySQL.query.await(
+        'SELECT plate, model, garage, state, fuel, engine, body, mods FROM noxa_vehicles WHERE owner_cid = ?',
+        { cid }) or {}
+end
+
+--- Véhicules en fourrière d'un citoyen.
+---@return table[]
+function DB.getImpoundedVehicles(cid)
+    return MySQL.query.await(
+        "SELECT plate, model, fuel, engine, body, mods FROM noxa_vehicles WHERE owner_cid = ? AND state = 'impound'",
+        { cid }) or {}
+end
+
+--- Ligne véhicule possédée par ce citoyen (anti-vol : garde d'appartenance).
+---@return table|nil
+function DB.getOwnedVehicleByPlate(plate, cid)
+    return MySQL.single.await(
+        'SELECT * FROM noxa_vehicles WHERE plate = ? AND owner_cid = ?', { plate, cid })
+end
+
+--- Transition d'état GARDÉE : ne réussit que si l'état courant correspond et
+--- que le citoyen possède bien le véhicule. Atomique = anti double-sortie.
+---@return boolean ok
+function DB.setVehicleState(plate, cid, fromState, toState)
+    local affected = MySQL.update.await(
+        'UPDATE noxa_vehicles SET state = ? WHERE plate = ? AND owner_cid = ? AND state = ?',
+        { toState, plate, cid, fromState })
+    return (affected or 0) > 0
+end
+
+--- Persiste l'état d'un véhicule au remisage (carburant + santé + mods).
+function DB.saveVehicleStatus(plate, cid, fuel, engine, body, modsJson)
+    MySQL.update([[
+        UPDATE noxa_vehicles SET fuel = ?, engine = ?, body = ?, mods = ?, state = 'stored'
+        WHERE plate = ? AND owner_cid = ?
+    ]], { fuel, engine, body, modsJson, plate, cid })
+end
+
+--- Au boot : remet en fourrière les véhicules restés « sortis » après un
+--- crash serveur, afin qu'ils soient récupérables (pas perdus dans le vide).
+function DB.impoundStrandedVehicles()
+    MySQL.update("UPDATE noxa_vehicles SET state = 'impound' WHERE state = 'out'")
+end
+
 -- ---------------------------------------------------------------------
 --  Immobilier (maisons / appartements)
 -- ---------------------------------------------------------------------
