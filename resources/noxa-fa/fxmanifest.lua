@@ -56,6 +56,9 @@ server_scripts {
     -- Inventaire : étend la classe Player (après core), utilise Needs à l'usage.
     'server/modules/inventory/server.lua',
     'server/modules/admin/server.lua',
+    -- Anti-cheat & panel staff (détection server-side + overlay staff F3).
+    -- Après le cœur (Players/Security/DB) ; expose Noxa.AntiCheat (grace/report).
+    'server/modules/anticheat/server.lua',
     -- Monde & gameplay (après needs : la boutique applique des effets de besoins)
     'server/modules/world/shop.lua',
     'server/modules/world/fuel.lua',
@@ -91,6 +94,8 @@ client_scripts {
     'client/modules/admin/client.lua',
     -- Panel gestion serveur (F9, superadmin) : applique les domaines diffusés.
     'client/modules/server-panel/client.lua',
+    -- Panel staff & anti-cheat (F3) : spectate discret, screenshot, report FPS.
+    'client/modules/staff-panel/client.lua',
     -- Monde : carte (blips), zones de proximité, boutique, carburant
     'client/modules/world/blips.lua',
     'client/modules/world/zones.lua',
@@ -149,4 +154,7 @@ files {
     -- Panel gestion serveur NUI (F9, superadmin)
     'nui/server-panel/server-panel.css',
     'nui/server-panel/server-panel.js',
+    -- Panel staff & anti-cheat NUI (F3, helper+)
+    'nui/staff-panel/staff-panel.css',
+    'nui/staff-panel/staff-panel.js',
 }

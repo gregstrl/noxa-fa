@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · NUI 100% custom · oxmysql · Zéro ox_lib visuel
 
-## État actuel — beta-1.6 · 2026-06-03
+## État actuel — beta-1.7 · 2026-06-03
 
 | Système | État | Notes |
 |---|---|---|
@@ -13,7 +13,7 @@
 | Véhicules (concessions, garages) | ✅ | Concession F→S, garage sortir/remiser, fourrière (amende), persistance état (carburant/santé/mods) ; tuning 🟡 |
 | Menu admin NUI (F10) | ✅ | Panneau RageUI 9 sections (joueurs, véhicules, TP, éco, jobs, sanctions, annonces, logs, serveur) — **rang revérifié serveur + log par action** |
 | Panel gestion serveur | ✅ | **Panel superadmin (F9) 8 onglets** : config live SANS restart — systèmes on/off, météo/heure, économie, boutiques, coordonnées (spawn/POI), jobs+grades, organisations, messages planifiés, whitelist. Mémoire + BDD + broadcast clients |
-| Anti-cheat & Panel staff | ✅ | Rate-limit, flag/violations, autoban, logs BDD + panneau staff NUI (sanctions, historique) |
+| Anti-cheat & Panel staff | ✅ | **Détection server-side** (speed/teleport/godmode/armes/spawn/argent) + échelle alerte→freeze→kick→ban auto · **Panel staff NUI (F3)** : fiches temps réel (license/Discord/IP/ping/FPS/position/session/score AC), spectate discret, screenshot, freeze, TP discrète, kick/ban, **alertes live** + journal `noxa_anticheat_logs` |
 | Map · Blips · POI | ✅ | 14 catégories de POI (+ concession), blips, zones de proximité + prompt NUI |
 | Drogues & Trafic | ❌ | Non démarré (prévu prochaine session) |
 | Téléphone NUI | 🟡 | Contacts, SMS temps réel, Twitter, Banque, Carte, Réglages ; appels à venir |
@@ -22,7 +22,46 @@
 | Météo & Heure serveur | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
 | HUD premium (minimap, vitesse) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 12h panel gestion serveur · 2026-06-03
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 16h anti-cheat & panel staff · 2026-06-03
+
+### Session 16h — Anti-cheat server-side & Panel staff (F3)
+
+Protection **100 % serveur** + boîte à outils staff. Nouveau module transverse
+`anticheat` (server) + `staff-panel` (client/NUI). Aucune donnée client de confiance.
+
+**Détection** (`server/modules/anticheat/server.lua`, scan serveur cadencé, OneSync)
+- **Speed hack** — vélocité serveur ; seuil à pied (exige **2 scans consécutifs**
+  pour ne pas flagger une chute/ragdoll) et seuil véhicule séparé.
+- **Téléportation (blink)** — saut de position **non corrélé à la vélocité**
+  (distance ≫ vitesse × Δt). Faux positifs évités via **grâce** (jail, respawn,
+  bring admin) et **destinations autorisées** `AC.expect` (coords **serveur**,
+  jamais client — couvre l'entrée/sortie d'un bien immobilier).
+- **God mode** — santé > 200 ou armure > 100 (hors bornes légitimes).
+- **Armes de triche** — arme équipée dans une **liste noire** (minigun, RPG…),
+  lue server-side (détecte menu de triche / spawn d'arme).
+- **Spam d'entités** — débit de création réseau (`entityCreating`) au-dessus d'un seuil.
+- **Injection d'argent** — pont depuis la classe `Player` (solde anormal / crédit
+  hors borne) vers le flux d'alertes.
+
+**Sanctions graduées** — score **cumulé** par joueur (décroissant dans le temps) :
+`alerte+log` → `avertissement` → `freeze + alerte urgente` → `kick+log` →
+`ban automatique+log`. Chaque palier n'est appliqué qu'**une fois**. Le staff
+(rang ≥ `mod`) est **exempté** du scan (test/noclip légitime).
+
+**Panel staff NUI** (`nui/staff-panel/`, z-index **60**, ouvert via **F3**, rang ≥ helper)
+- **Joueurs** — table temps réel triée par score AC (suspects en tête) ; fiche
+  détaillée : Nom/ID, **License, Discord, IP** (admin only), **Ping, FPS**
+  (statebag répliqué), **Position, Job, Solde, Session, Score AC**.
+- **Actions** — **spectate discret** (mode spectateur invisible), **screenshot**
+  (best-effort `screenshot-basic`), **freeze/libérer**, **TP discrète**,
+  **kick** (mod), **ban** (admin) — rang **revérifié serveur** + journalisé.
+- **Alertes** — flux **temps réel** des détections (badge d'onglet, code couleur
+  par sévérité) poussé à **tout staff en ligne**.
+- **Logs AC** — historique `noxa_anticheat_logs` filtrable par catégorie.
+
+**BDD** — `noxa_anticheat_logs` (migration `004_anticheat.sql`, intégrée à
+`install.sql` idempotent). Réglages dans `C.AntiCheat` (seuils, sévérités, échelle
+de sanction, exemption, webhook screenshot) — tout configurable, chaque seuil justifié.
 
 ### Session 12h — Panel gestion serveur in-game (F9, superadmin)
 
@@ -198,13 +237,14 @@ noxa-fa/
 │   ├── core/               # db · security · player · manager
 │   └── modules/
 │       ├── societies/ economy/ jobs/ banking/ characters/ needs/ admin/
+│       ├── anticheat/        # détection server-side + endpoints panel staff
 │       ├── world/          # shop.lua (épicerie) · fuel.lua (station essence)
 │       ├── properties/     # immobilier : achat/entrée/verrou/mobilier (autoritaire)
 │       └── phone/          # téléphone : numéro, contacts, SMS, réseau social
 ├── client/
 │   ├── core/               # nui (pont) · spawn · ui
 │   └── modules/
-│       ├── characters/ hud/ economy/ jobs/ banking/ admin/
+│       ├── characters/ hud/ economy/ jobs/ banking/ admin/ staff-panel/
 │       ├── world/          # blips · zones (proximité + prompt) · shop · fuel
 │       ├── properties/     # portes interactives, intérieurs, mobilier
 │       └── phone/          # ouverture F1, pont NUI
@@ -215,7 +255,8 @@ noxa-fa/
     ├── shop/               # boutique épicerie premium
     ├── phone/              # smartphone (accueil + 6 applications)
     ├── jobs/               # jobs actifs : MDT police · atelier méca · fouille
-    └── admin/              # panneau d'administration (F10, style RageUI)
+    ├── admin/              # panneau d'administration (F10, style RageUI)
+    └── staff-panel/        # panel staff & anti-cheat (F3, alertes live)
 ```
 
 ## Principes
@@ -246,6 +287,8 @@ noxa-fa/
 - **Mécanicien** : `/reparer` · `/atelier`
 
 ### Staff (rang vérifié serveur)
+- **Panel staff & anti-cheat NUI** : **F3** (`/staffpanel`) — joueurs temps réel,
+  alertes anti-triche live, logs AC, spectate/freeze/TP/kick/ban (helper+)
 - **Menu admin NUI** : **F10** (`/adminmenu`) — 9 sections, navigation flèches + souris
 - Commandes : `/kick` `/ban` `/unban` `/heal` `/revive` `/goto` `/bring` `/announce`
   `/setmoney` `/job` `/setjobwl` `/setgroup`

@@ -108,6 +108,7 @@ copCommand('emprisonner', function(src, ply, target, args)
     target:setMeta('jail', os.time() + minutes * 60)
     target:setMeta('cuffed', false)
     TriggerClientEvent('noxa:police:cuff', target.source, false)
+    if Noxa.AntiCheat then Noxa.AntiCheat.grace(target.source) end
     TriggerClientEvent('noxa:police:jail', target.source, minutes, CFG.jail)
     TriggerClientEvent('noxa:notify', src, ('%s emprisonné·e %d min.'):format(target:getName(), minutes), 'success')
     DB.log('job', 'warn', target.license, ('%s a emprisonné %s (%d min)'):format(ply:getName(), target:getName(), minutes))
@@ -120,6 +121,7 @@ S.onNet('noxa:police:requestRelease', function(src, ply)
     local until_ = ply.metadata.jail
     if not until_ or os.time() < (until_ - 5) then return end  -- peine non purgée
     ply:setMeta('jail', nil)
+    if Noxa.AntiCheat then Noxa.AntiCheat.grace(src) end
     TriggerClientEvent('noxa:police:release', src, CFG.release)
 end)
 

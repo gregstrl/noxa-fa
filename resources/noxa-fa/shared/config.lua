@@ -51,6 +51,10 @@ C.Security = {
         -- Panel gestion serveur : enchaînement de sauvegardes par un superadmin.
         ['noxa:cfg:action']   = { count = 80, window = 10000 },
         ['noxa:cfg:refresh']  = { count = 40, window = 10000 },
+        -- Panel staff : navigation + rafraîchissements fréquents par un staff.
+        ['noxa:staff:open']   = { count = 20, window = 10000 },
+        ['noxa:staff:fetch']  = { count = 80, window = 10000 },
+        ['noxa:staff:action'] = { count = 80, window = 10000 },
     },
     -- Bannir automatiquement après N violations critiques détectées
     autobanThreshold = 5,
@@ -134,6 +138,77 @@ C.Admin = {
         ['perm'] = 0,
     },
     announcePrefix = '^1[ADMIN]^7 ',
+}
+
+-- =====================================================================
+--  ANTI-CHEAT — détection server-side (vélocité, position, santé, armes,
+--  spawn d'entités) + échelle de sanctions. TOUT est vérifié serveur ;
+--  le client n'est JAMAIS de confiance. Seuils volontairement larges pour
+--  ne pas pénaliser un jeu légitime : une détection vaut mieux qu'un faux
+--  positif qui bannirait un joueur honnête.
+-- =====================================================================
+C.AntiCheat = {
+    enabled       = true,
+    scanInterval  = 3000,        -- ms entre deux passes de scan serveur
+    -- Rang staff (et au-dessus) EXEMPTÉ du scan : un modérateur peut avoir un
+    -- comportement « anormal » légitime (noclip, TP, test). user/helper restent surveillés.
+    exemptRank    = 'mod',
+    graceMs       = 8000,        -- fenêtre de grâce après une TP serveur légitime (jail, bien, admin)
+
+    -- Vitesse : vélocité serveur (m/s). 1 m/s ≈ 3.6 km/h.
+    speed = {
+        onFoot    = 12.0,        -- ~43 km/h : un sprint humain plafonne ~7 m/s
+        inVehicle = 95.0,        -- ~342 km/h : au-delà = véhicule trafiqué (hypercar ≈ 150 km/h)
+        severity  = 'high',
+    },
+    -- Téléportation : grand saut de position NON corrélé à la vélocité (blink).
+    -- On compare la distance parcourue à la distance plausible (vélocité × Δt).
+    teleport = {
+        minJump   = 80.0,        -- en-deçà : jamais flaggé (déplacements normaux)
+        tolerance = 1.8,         -- marge : distance ≤ vélocité×Δt×tolérance + base
+        base      = 25.0,        -- distance « gratuite » par scan (latence, courbes)
+        severity  = 'medium',
+    },
+    -- God mode : santé / armure hors bornes légitimes (max health joueur = 200).
+    godmode = {
+        maxHealth = 200,
+        maxArmor  = 100,
+        severity  = 'high',
+    },
+    -- Armes interdites en RP (spawn d'arme / menu de triche), lues server-side.
+    weapons = {
+        severity  = 'critical',
+        blacklist = {
+            [`WEAPON_MINIGUN`]        = true,
+            [`WEAPON_RPG`]            = true,
+            [`WEAPON_GRENADELAUNCHER`]= true,
+            [`WEAPON_GRENADELAUNCHER_SMOKE`] = true,
+            [`WEAPON_RAILGUN`]        = true,
+            [`WEAPON_HOMINGLAUNCHER`] = true,
+            [`WEAPON_COMPACTLAUNCHER`]= true,
+            [`WEAPON_RAYMINIGUN`]     = true,
+        },
+    },
+    -- Spam de spawn d'entités réseau (props/véhicules) : fenêtre glissante.
+    spawn = {
+        window      = 10000,     -- fenêtre (ms)
+        maxInWindow = 10,        -- nb max d'entités créées / fenêtre / joueur
+        severity    = 'medium',
+    },
+    -- Échelle d'action : poids par sévérité -> score cumulé -> sanction.
+    weights = { low = 1, medium = 2, high = 3, critical = 6 },
+    actions = {
+        warnAt   = 2,            -- avertit le joueur (dissuasion) + alerte staff
+        freezeAt = 4,            -- fige le joueur + alerte URGENTE staff
+        kickAt   = 6,            -- expulsion + log
+        banAt    = 10,           -- bannissement automatique + log
+    },
+    banDuration   = 0,           -- durée du ban auto (secondes ; 0 = permanent)
+    decayInterval = 60000,       -- le score décroît dans le temps...
+    decayAmount   = 1,           -- ...de N points par minute (évite l'accumulation lente)
+    -- Capture d'écran staff (optionnel) : URL de webhook Discord. Vide = désactivé.
+    -- Nécessite la ressource externe `screenshot-basic` (non incluse, facultative).
+    screenshotWebhook = '',
 }
 
 -- =====================================================================

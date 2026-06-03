@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="jobs/jobs.css" />
     <link rel="stylesheet" href="admin/admin.css" />
     <link rel="stylesheet" href="server-panel/server-panel.css" />
+    <link rel="stylesheet" href="staff-panel/staff-panel.css" />
 </head>
 <body>
     <!-- Couche notifications (toasts) -->
@@ -77,6 +78,9 @@
     <!-- Panel gestion serveur (overlay superadmin, z-index 60) -->
     <div id="serverpanel" class="hidden"></div>
 
+    <!-- Panel staff & anti-cheat (overlay staff, z-index 60) -->
+    <div id="staffpanel" class="hidden"></div>
+
     <!-- Routeur NUI + helpers (chargé en premier) -->
     <script src="shell.js"></script>
     <!-- Modules d'interface -->
@@ -95,5 +99,6 @@
     <script src="jobs/jobs.js"></script>
     <script src="admin/admin.js"></script>
     <script src="server-panel/server-panel.js"></script>
+    <script src="staff-panel/staff-panel.js"></script>
 </body>
 </html>

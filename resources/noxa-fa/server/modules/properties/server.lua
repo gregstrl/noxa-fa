@@ -134,6 +134,13 @@ S.onNet('noxa:prop:enter', function(src, ply, propId)
     if p.locked then
         return TriggerClientEvent('noxa:notify', src, 'La porte est verrouillée.', 'error')
     end
+    -- Anti-triche : l'entrée (intérieur) ET la future sortie (porte) sont des
+    -- TP légitimes. On les déclare comme destinations autorisées (coords serveur)
+    -- pour que le scan ne flagge pas ces sauts — la sortie est pilotée client.
+    if Noxa.AntiCheat then
+        Noxa.AntiCheat.expect(src, p.inside)
+        if p.door then Noxa.AntiCheat.expect(src, p.door) end
+    end
     TriggerClientEvent('noxa:prop:enterInterior', src, {
         id = p.id, inside = p.inside, door = p.door, furniture = p.furniture,
     })

@@ -167,6 +167,7 @@ staffCommand('bring', 'admin', function(src, args)
         return feedback(src, 'Cible introuvable.', 'error')
     end
     local coords = GetEntityCoords(GetPlayerPed(src))
+    if Noxa.AntiCheat then Noxa.AntiCheat.grace(targetId) end
     TriggerClientEvent('noxa:admin:teleport', targetId, { x = coords.x, y = coords.y, z = coords.z })
     DB.log('admin', 'info', nil, ('%s a ramené src:%s'):format(actorName(src), targetId))
 end)
@@ -393,6 +394,7 @@ actions.bring = { rank = 'admin', run = function(src, ply, tid)
     local ped = GetPlayerPed(src)
     if ped == 0 then return end
     local c = GetEntityCoords(ped)
+    if Noxa.AntiCheat then Noxa.AntiCheat.grace(tid) end
     TriggerClientEvent('noxa:admin:teleport', tid, { x = c.x, y = c.y, z = c.z })
     DB.log('admin', 'info', nil, ('%s a ramené src:%s'):format(actorName(src), tid))
 end }

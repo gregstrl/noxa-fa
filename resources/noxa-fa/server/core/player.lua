@@ -96,6 +96,10 @@ function Player:addMoney(account, amount, reason)
     if not amount then return false end
     if amount > CFG.Economy.maxTransaction then
         Noxa.Security.flag(self.source, ('addMoney hors borne: %s'):format(amount))
+        if Noxa.AntiCheat then
+            Noxa.AntiCheat.report(self.source, 'money', 'critical',
+                ('crédit hors borne: %s'):format(amount))
+        end
         return false
     end
     if account == E.Accounts.CASH then
@@ -153,6 +157,10 @@ function Player:onMoneyChanged(account, txType, amount, reason)
     if balance > CFG.Economy.maxBalance then
         Noxa.Security.flag(self.source,
             ('solde %s anormal: %s'):format(account, balance))
+        if Noxa.AntiCheat then
+            Noxa.AntiCheat.report(self.source, 'money', 'high',
+                ('solde %s anormal: %s'):format(account, balance))
+        end
     end
     -- Journalisation (toujours pour les gros montants)
     if amount >= CFG.Economy.logThreshold then

@@ -75,6 +75,7 @@ S.onNet('noxa:ems:selfRespawn', function(src, ply)
     end
     ply:setMeta('isDead', false)
     ply.metadata.deathAt = nil
+    if Noxa.AntiCheat then Noxa.AntiCheat.grace(src) end
     TriggerClientEvent('noxa:admin:revive', src)
     TriggerClientEvent('noxa:ems:respawn', src, CFG.hospital)
     DB.log('job', 'info', ply.license, ('%s a réapparu à l\'hôpital (bleedout)'):format(ply:getName()))

@@ -1,0 +1,244 @@
+/* =====================================================================
+   NOXA FA — Panel staff & anti-cheat (overlay latéral, dark premium)
+   z-index 60 (couche staff). Conteneur plein écran, pointer-events:none ;
+   seuls les éléments interactifs réactivent les events. Anti-superposition :
+   un seul panneau « plein » actif à la fois (cf. Noxa.NUI.activePanel).
+   ===================================================================== */
+
+#staffpanel {
+    position: fixed;
+    inset: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 60;
+    pointer-events: none;
+    font-family: var(--font);
+}
+
+/* Panneau latéral droit ------------------------------------------------- */
+.stf-panel {
+    position: absolute;
+    top: 0; right: 0;
+    width: 540px;
+    max-width: 92vw;
+    height: 100vh;
+    background: rgba(10, 10, 15, 0.96);
+    border-left: 1px solid var(--border-strong);
+    box-shadow: -24px 0 64px rgba(0, 0, 0, 0.6);
+    pointer-events: auto;
+    display: flex;
+    flex-direction: column;
+    animation: slideInRight .26s cubic-bezier(.2,.9,.3,1) both;
+}
+
+/* En-tête --------------------------------------------------------------- */
+.stf-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 22px 16px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(99,102,241,0.10), transparent);
+}
+.stf-logo {
+    font-family: var(--font-display);
+    font-weight: 800;
+    font-size: 18px;
+    letter-spacing: .02em;
+    color: var(--text);
+}
+.stf-logo span { color: var(--accent-2); }
+.stf-head-sub { font-size: 11px; color: var(--text-faint); margin-top: 2px; letter-spacing: .04em; }
+.stf-ac-dot {
+    display: inline-flex; align-items: center; gap: 7px;
+    font-size: 11px; font-weight: 700; letter-spacing: .03em;
+    padding: 5px 10px; border-radius: 999px;
+    background: rgba(34,197,94,0.14); color: #86efac;
+    border: 1px solid rgba(34,197,94,0.3);
+}
+.stf-ac-dot::before { content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--success); box-shadow: 0 0 8px var(--success); }
+.stf-ac-dot.off { background: rgba(239,68,68,0.14); color: #fca5a5; border-color: rgba(239,68,68,0.3); }
+.stf-ac-dot.off::before { background: var(--error); box-shadow: 0 0 8px var(--error); }
+.stf-rank {
+    margin-left: auto;
+    font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em;
+    padding: 5px 11px; border-radius: 999px;
+    background: var(--accent-soft); color: #c7d2fe; border: 1px solid rgba(99,102,241,0.35);
+}
+.stf-close {
+    cursor: pointer; font-size: 12px; font-weight: 600; color: var(--text-dim);
+    padding: 6px 10px; border-radius: var(--r-sm); border: 1px solid var(--border);
+    transition: color .15s, border-color .15s;
+}
+.stf-close:hover { color: var(--text); border-color: var(--accent); }
+
+/* Onglets --------------------------------------------------------------- */
+.stf-tabs {
+    display: flex; gap: 4px;
+    padding: 10px 14px 0;
+    border-bottom: 1px solid var(--border);
+}
+.stf-tab {
+    position: relative;
+    cursor: pointer;
+    font-size: 13px; font-weight: 600; color: var(--text-dim);
+    padding: 10px 14px;
+    border-radius: var(--r-sm) var(--r-sm) 0 0;
+    transition: color .15s, background .15s;
+}
+.stf-tab:hover { color: var(--text-soft); background: var(--surface-glass); }
+.stf-tab.active { color: var(--text); background: var(--accent-soft); }
+.stf-tab.active::after {
+    content: ''; position: absolute; left: 12px; right: 12px; bottom: -1px; height: 2px;
+    background: var(--accent-grad); border-radius: 2px;
+}
+.stf-tab-badge {
+    display: inline-block; min-width: 18px; text-align: center;
+    margin-left: 6px; padding: 1px 6px; border-radius: 999px;
+    font-size: 10px; font-weight: 800;
+    background: var(--error); color: #fff;
+}
+
+/* Contenu --------------------------------------------------------------- */
+.stf-content {
+    flex: 1; min-height: 0;
+    overflow-y: auto;
+    padding: 18px 22px 28px;
+}
+.stf-title { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: .03em; margin-bottom: 12px; }
+.stf-hint  { font-size: 12px; color: var(--text-faint); margin-bottom: 12px; line-height: 1.5; }
+.stf-empty { padding: 26px; text-align: center; color: var(--text-faint); font-size: 13px; }
+
+.stf-search { margin-bottom: 12px; }
+
+/* Liste de joueurs ------------------------------------------------------ */
+.stf-players { display: flex; flex-direction: column; gap: 6px; }
+.stf-player {
+    display: flex; align-items: center; gap: 12px;
+    padding: 10px 12px;
+    background: var(--surface-glass);
+    border: 1px solid var(--border);
+    border-radius: var(--r-sm);
+    cursor: pointer;
+    transition: border-color .14s, background .14s, transform .1s;
+}
+.stf-player:hover { border-color: var(--border-strong); transform: translateX(-2px); }
+.stf-player.selected { border-color: var(--accent); background: var(--accent-soft); }
+.stf-pid {
+    flex: 0 0 38px; height: 38px; border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-weight: 800; font-size: 14px;
+    background: var(--bg-2); color: var(--text-soft);
+}
+.stf-pinfo { flex: 1; min-width: 0; }
+.stf-pname { font-size: 14px; font-weight: 600; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stf-pmeta { font-size: 11px; color: var(--text-faint); margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.stf-badge { padding: 1px 7px; border-radius: 999px; font-size: 10px; font-weight: 700; }
+.stf-badge.staff { background: var(--accent-soft); color: #c7d2fe; }
+.stf-badge.lobby { background: rgba(245,158,11,0.16); color: #fcd34d; }
+/* Pastille de score AC : verte (0), orange (faible), rouge (élevé) */
+.stf-score { flex: 0 0 auto; font-size: 11px; font-weight: 800; padding: 4px 9px; border-radius: 999px; }
+.stf-score.s0 { background: rgba(34,197,94,0.14); color: #86efac; }
+.stf-score.s1 { background: rgba(245,158,11,0.16); color: #fcd34d; }
+.stf-score.s2 { background: rgba(239,68,68,0.18); color: #fca5a5; }
+
+/* Fiche joueur détaillée ----------------------------------------------- */
+.stf-detail {
+    margin-top: 16px;
+    border: 1px solid var(--border-strong);
+    border-radius: var(--r-md);
+    background: var(--surface);
+    overflow: hidden;
+}
+.stf-detail-head {
+    padding: 14px 16px;
+    background: var(--accent-grad-soft);
+    border-bottom: 1px solid var(--border);
+}
+.stf-detail-name { font-size: 16px; font-weight: 700; color: var(--text); }
+.stf-detail-sub  { font-size: 12px; color: var(--text-dim); margin-top: 3px; }
+.stf-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+    background: var(--border);
+}
+.stf-cell { background: var(--bg-1); padding: 10px 14px; }
+.stf-cell-k { font-size: 10px; text-transform: uppercase; letter-spacing: .05em; color: var(--text-faint); }
+.stf-cell-v { font-size: 13px; font-weight: 600; color: var(--text-soft); margin-top: 3px; word-break: break-all; }
+.stf-actions { display: flex; flex-wrap: wrap; gap: 8px; padding: 14px 16px; }
+.stf-act {
+    cursor: pointer; font-size: 12px; font-weight: 600;
+    padding: 8px 13px; border-radius: var(--r-sm);
+    background: var(--bg-2); color: var(--text-soft);
+    border: 1px solid var(--border-strong);
+    transition: border-color .14s, background .14s, transform .1s;
+}
+.stf-act:hover { border-color: var(--accent); transform: translateY(-1px); }
+.stf-act.on { background: var(--accent-soft); border-color: var(--accent); color: #c7d2fe; }
+.stf-act.danger { background: rgba(239,68,68,0.14); border-color: rgba(239,68,68,0.4); color: #fca5a5; }
+.stf-act.danger:hover { background: rgba(239,68,68,0.26); border-color: var(--error); }
+
+.stf-form { padding: 0 16px 14px; display: flex; flex-direction: column; gap: 10px; }
+.stf-row { display: flex; gap: 10px; align-items: flex-end; }
+.stf-row > div { flex: 1; }
+
+.stf-shot { padding: 0 16px 14px; }
+.stf-shot img { width: 100%; border-radius: var(--r-sm); border: 1px solid var(--border-strong); }
+.stf-shot-txt { font-size: 12px; color: var(--text-faint); padding: 10px; background: var(--bg-1); border-radius: var(--r-sm); }
+
+/* Flux d'alertes -------------------------------------------------------- */
+.stf-alerts { display: flex; flex-direction: column; gap: 8px; }
+.stf-alert {
+    display: flex; gap: 12px; align-items: flex-start;
+    padding: 11px 13px;
+    border-radius: var(--r-sm);
+    background: var(--surface-glass);
+    border-left: 3px solid var(--text-faint);
+    animation: fadeIn .25s ease both;
+}
+.stf-alert.low      { border-left-color: var(--info); }
+.stf-alert.medium   { border-left-color: var(--warning); }
+.stf-alert.high     { border-left-color: #fb923c; }
+.stf-alert.critical { border-left-color: var(--error); background: rgba(239,68,68,0.08); }
+.stf-alert-ic { font-size: 18px; line-height: 1.2; }
+.stf-alert-body { flex: 1; min-width: 0; }
+.stf-alert-top { display: flex; align-items: center; gap: 8px; }
+.stf-alert-type { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--text); }
+.stf-alert-name { font-size: 12px; color: var(--text-dim); }
+.stf-alert-detail { font-size: 12px; color: var(--text-soft); margin-top: 3px; }
+.stf-alert-meta { font-size: 10px; color: var(--text-faint); margin-top: 4px; display: flex; gap: 10px; }
+.stf-actbadge { font-size: 10px; font-weight: 800; padding: 2px 8px; border-radius: 999px; text-transform: uppercase; }
+.stf-actbadge.alert  { background: rgba(56,189,248,0.16); color: #7dd3fc; }
+.stf-actbadge.warn   { background: rgba(245,158,11,0.16); color: #fcd34d; }
+.stf-actbadge.freeze { background: rgba(99,102,241,0.18); color: #c7d2fe; }
+.stf-actbadge.kick   { background: rgba(251,146,60,0.18); color: #fdba74; }
+.stf-actbadge.ban    { background: rgba(239,68,68,0.2); color: #fca5a5; }
+
+/* Logs AC (filtres + lignes) ------------------------------------------- */
+.stf-filters { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.stf-chip {
+    cursor: pointer; font-size: 11px; font-weight: 600;
+    padding: 5px 11px; border-radius: 999px;
+    background: var(--bg-2); color: var(--text-dim);
+    border: 1px solid var(--border);
+    transition: color .14s, border-color .14s, background .14s;
+}
+.stf-chip:hover { color: var(--text-soft); }
+.stf-chip.active { background: var(--accent-soft); color: #c7d2fe; border-color: rgba(99,102,241,0.4); }
+.stf-logs { display: flex; flex-direction: column; gap: 5px; }
+.stf-log {
+    display: grid; grid-template-columns: 84px 1fr auto; gap: 10px; align-items: center;
+    padding: 8px 11px; border-radius: var(--r-sm);
+    background: var(--surface-glass); font-size: 12px;
+    border: 1px solid var(--border);
+}
+.stf-log-type { font-weight: 800; text-transform: uppercase; font-size: 10px; letter-spacing: .03em; color: var(--accent-2); }
+.stf-log-msg  { color: var(--text-soft); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.stf-log-time { color: var(--text-faint); font-size: 10px; white-space: nowrap; }
+.stf-log.critical .stf-log-type { color: var(--error); }
+.stf-log.high .stf-log-type { color: #fb923c; }
+
+/* Statistiques serveur -------------------------------------------------- */
+.stf-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.stf-stat { background: var(--surface); border: 1px solid var(--border); border-radius: var(--r-md); padding: 16px; }
+.stf-stat-val { font-family: var(--font-display); font-size: 24px; font-weight: 800; color: var(--text); }
+.stf-stat-label { font-size: 11px; color: var(--text-faint); margin-top: 4px; text-transform: uppercase; letter-spacing: .04em; }

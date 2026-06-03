@@ -514,4 +514,38 @@ function DB.getTweets(limit)
         { limit or 30 }) or {}
 end
 
+-- ---------------------------------------------------------------------
+--  Anti-cheat — journal dédié des détections (server-side)
+-- ---------------------------------------------------------------------
+
+--- Enregistre une détection anti-triche (asynchrone : ne bloque jamais le scan).
+---@param d table { license, citizenid, name, src, type, severity, score, detail, position, action }
+function DB.logAnticheat(d)
+    MySQL.insert([[
+        INSERT INTO noxa_anticheat_logs
+            (license, citizenid, name, src, type, severity, score, detail, position, action)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    ]], {
+        d.license, d.citizenid, d.name, d.src, d.type, d.severity or 'low',
+        d.score or 0, d.detail, d.position, d.action or 'alert',
+    })
+end
+
+--- Historique des détections anti-triche (option : filtré par type), pour le panel staff.
+---@param filterType? string nil|'all' = toutes catégories
+---@param limit? integer
+---@return table[]
+function DB.getAnticheatLogs(filterType, limit)
+    if filterType and filterType ~= 'all' then
+        return MySQL.query.await([[
+            SELECT name, license, src, type, severity, score, detail, position, action, created_at
+            FROM noxa_anticheat_logs WHERE type = ? ORDER BY id DESC LIMIT ?
+        ]], { filterType, limit or 60 }) or {}
+    end
+    return MySQL.query.await([[
+        SELECT name, license, src, type, severity, score, detail, position, action, created_at
+        FROM noxa_anticheat_logs ORDER BY id DESC LIMIT ?
+    ]], { limit or 60 }) or {}
+end
+
 return DB
