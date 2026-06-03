@@ -27,6 +27,7 @@
     <link rel="stylesheet" href="economy/economy.css" />
     <link rel="stylesheet" href="jobs/jobs.css" />
     <link rel="stylesheet" href="admin/admin.css" />
+    <link rel="stylesheet" href="server-panel/server-panel.css" />
 </head>
 <body>
     <!-- Couche notifications (toasts) -->
@@ -73,6 +74,9 @@
     <!-- Panneau d'administration (overlay staff, z-index 60) -->
     <div id="admin" class="hidden"></div>
 
+    <!-- Panel gestion serveur (overlay superadmin, z-index 60) -->
+    <div id="serverpanel" class="hidden"></div>
+
     <!-- Routeur NUI + helpers (chargé en premier) -->
     <script src="shell.js"></script>
     <!-- Modules d'interface -->
@@ -90,5 +94,6 @@
     <script src="phone/phone.js"></script>
     <script src="jobs/jobs.js"></script>
     <script src="admin/admin.js"></script>
+    <script src="server-panel/server-panel.js"></script>
 </body>
 </html>

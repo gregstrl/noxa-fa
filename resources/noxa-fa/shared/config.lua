@@ -48,6 +48,9 @@ C.Security = {
         -- (limites larges pour ne pas flagger un staff légitime).
         ['noxa:admin:fetch']  = { count = 80, window = 10000 },
         ['noxa:admin:action'] = { count = 60, window = 10000 },
+        -- Panel gestion serveur : enchaînement de sauvegardes par un superadmin.
+        ['noxa:cfg:action']   = { count = 80, window = 10000 },
+        ['noxa:cfg:refresh']  = { count = 40, window = 10000 },
     },
     -- Bannir automatiquement après N violations critiques détectées
     autobanThreshold = 5,
@@ -425,6 +428,20 @@ C.Properties = {
       door = { x = -174.10,  y = 502.10,   z = 137.43 } },
     { name = 'villa_richman', label = 'Richman Villa', tier = 'villa',
       door = { x = -1289.40, y = 449.50,   z = 96.90 } },
+}
+
+-- =====================================================================
+--  SYSTÈMES — bascules globales pilotées en direct (panel gestion serveur)
+--  Valeurs par défaut ; surchargées à chaud via le config-manager (BDD).
+--  Les modules concernés lisent ces drapeaux au runtime (jamais de restart).
+-- =====================================================================
+C.Systems = {
+    pvp           = true,    -- tirs amis autorisés (PVP global)
+    weatherAuto   = true,    -- rotation météo automatique (sinon météo figée)
+    forcedWeather = false,   -- type météo imposé quand weatherAuto = false (ex 'RAIN')
+    payroll       = true,    -- versement automatique des salaires
+    economyTax    = true,    -- prélèvement des taxes/puits monétaires
+    scheduledMsg  = true,    -- diffusion des messages serveur planifiés
 }
 
 -- =====================================================================

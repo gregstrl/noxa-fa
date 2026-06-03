@@ -48,10 +48,45 @@ end
 
 WT.payload = payload
 
+-- ---------------------------------------------------------------------
+--  API live (pilotée par le panel gestion serveur, config-manager)
+--  Aucun restart : heure/météo modifiables et rediffusées immédiatement.
+-- ---------------------------------------------------------------------
+
+--- Rotation météo automatique on/off (lue depuis C.Systems.weatherAuto).
+local function autoRotate()
+    return not (Noxa.Config.Systems and Noxa.Config.Systems.weatherAuto == false)
+end
+
+--- Force un type météo de la séquence (utilisé quand l'auto est coupée).
+---@param wtype string
+---@return boolean ok
+function WT.forceWeather(wtype)
+    wtype = tostring(wtype or ''):upper()
+    for i, t in ipairs(CFG.weatherCycle) do
+        if t == wtype then
+            weatherIndex = i
+            weatherSince = GetGameTimer()
+            TriggerClientEvent('noxa:world:sync', -1, payload())
+            return true
+        end
+    end
+    return false
+end
+
+--- Cale l'horloge serveur sur une heure pleine (0..23).
+---@param hour integer
+function WT.setHour(hour)
+    hour = math.floor(tonumber(hour) or 0) % 24
+    -- Recale la base de temps pour que currentTime() reparte de `hour:00`.
+    startMs = GetGameTimer() - (hour * 60 * CFG.msPerMinute)
+    TriggerClientEvent('noxa:world:sync', -1, payload())
+end
+
 -- Diffusion périodique (heure + météo) à tous les joueurs.
 CreateThread(function()
     while true do
-        tickWeather()
+        if autoRotate() then tickWeather() end  -- météo figée si auto coupée
         TriggerClientEvent('noxa:world:sync', -1, payload())
         Wait(CFG.broadcast)
     end

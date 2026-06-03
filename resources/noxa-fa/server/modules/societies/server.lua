@@ -65,6 +65,16 @@ function Soc.getAll()
     return cache
 end
 
+--- Crée une caisse société à chaud (ex: nouveau gang créé via le panel).
+--- Idempotent : sans effet si la société existe déjà.
+---@return boolean created
+function Soc.ensure(name, label, sType, start)
+    if cache[name] then return false end
+    DB.ensureSociety(name, label, sType, start or 0)
+    cache[name] = { label = label, type = sType, balance = math.floor(start or 0), dirty = false }
+    return true
+end
+
 -- ---------------------------------------------------------------------
 --  Mutations (validées + journalisées)
 -- ---------------------------------------------------------------------

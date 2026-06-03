@@ -444,6 +444,64 @@ function DB.getConversations(myNum)
     ]], { myNum, myNum }) or {}
 end
 
+-- ---------------------------------------------------------------------
+--  Panel gestion serveur (config-manager)
+--  Surcharges de configuration persistées par DOMAINE (instantané JSON).
+-- ---------------------------------------------------------------------
+
+--- Charge toutes les surcharges de config (appelé une fois au démarrage).
+---@return table[] lignes { ckey, cvalue }
+function DB.getConfigOverrides()
+    return MySQL.query.await('SELECT ckey, cvalue FROM noxa_config') or {}
+end
+
+--- Persiste (upsert) l'instantané JSON d'un domaine de config.
+function DB.setConfigOverride(ckey, cvalueJson, actor)
+    MySQL.insert([[
+        INSERT INTO noxa_config (ckey, cvalue, updated_by) VALUES (?, ?, ?)
+        ON DUPLICATE KEY UPDATE cvalue = VALUES(cvalue), updated_by = VALUES(updated_by)
+    ]], { ckey, cvalueJson, actor })
+end
+
+--- Supprime la surcharge d'un domaine (retour à la valeur statique du code).
+function DB.deleteConfigOverride(ckey)
+    MySQL.update('DELETE FROM noxa_config WHERE ckey = ?', { ckey })
+end
+
+-- ---------------------------------------------------------------------
+--  Messages serveur planifiés
+-- ---------------------------------------------------------------------
+
+function DB.getScheduledMessages()
+    return MySQL.query.await(
+        'SELECT id, body, interval_min, enabled FROM noxa_scheduled_messages ORDER BY id ASC') or {}
+end
+
+function DB.addScheduledMessage(body, intervalMin, createdBy)
+    return MySQL.insert.await(
+        'INSERT INTO noxa_scheduled_messages (body, interval_min, created_by) VALUES (?, ?, ?)',
+        { body, intervalMin, createdBy })
+end
+
+function DB.setScheduledMessageEnabled(id, enabled)
+    MySQL.update('UPDATE noxa_scheduled_messages SET enabled = ? WHERE id = ?',
+        { enabled and 1 or 0, id })
+end
+
+function DB.deleteScheduledMessage(id)
+    MySQL.update('DELETE FROM noxa_scheduled_messages WHERE id = ?', { id })
+end
+
+-- ---------------------------------------------------------------------
+--  Whitelist d'emploi — vue d'administration (liste globale)
+-- ---------------------------------------------------------------------
+
+function DB.getJobWhitelistAll(limit)
+    return MySQL.query.await(
+        'SELECT citizenid, job, max_grade, granted_by, created_at FROM noxa_job_whitelist ORDER BY created_at DESC LIMIT ?',
+        { limit or 200 }) or {}
+end
+
 function DB.addTweet(cid, author, body)
     return MySQL.insert.await(
         'INSERT INTO noxa_phone_tweets (author_cid, author, body) VALUES (?, ?, ?)',

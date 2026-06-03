@@ -68,6 +68,12 @@ local function buildPoints()
     end
 end
 
+--- Reconstruit la liste plate des POI statiques (config modifiée à chaud).
+--- Les points dynamiques (immobilier...) sont préservés.
+function World.rebuild()
+    buildPoints()
+end
+
 local function showPrompt(point)
     if promptShown and active == point then return end
     active = point

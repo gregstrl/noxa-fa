@@ -5,7 +5,7 @@ lua54 'yes'
 name 'noxa-core'
 author 'Noxa FA'
 description 'Noxa FA — Base RP FiveM moderne, modulaire et sécurisée (UI 100% custom)'
-version '0.4.0'
+version '0.5.0'
 
 -- Dépendances : UNIQUEMENT oxmysql (base de données).
 -- ZÉRO ox_lib : toute l'interface est 100 % NUI custom (nui/).
@@ -39,6 +39,9 @@ server_scripts {
     'server/core/security.lua',
     'server/core/player.lua',
     'server/core/manager.lua',
+    -- Gestionnaire de config live (panel gestion serveur) : référence
+    -- Config/Enums au chargement, applique les surcharges BDD au boot.
+    'server/modules/config-manager/server.lua',
     -- Modules (sociétés AVANT jobs/banque qui en dépendent)
     'server/modules/societies/server.lua',
     'server/modules/economy/server.lua',
@@ -86,6 +89,8 @@ client_scripts {
     'client/modules/jobs/mechanic.lua',
     'client/modules/banking/client.lua',
     'client/modules/admin/client.lua',
+    -- Panel gestion serveur (F9, superadmin) : applique les domaines diffusés.
+    'client/modules/server-panel/client.lua',
     -- Monde : carte (blips), zones de proximité, boutique, carburant
     'client/modules/world/blips.lua',
     'client/modules/world/zones.lua',
@@ -141,4 +146,7 @@ files {
     -- Panneau d'administration NUI (F10)
     'nui/admin/admin.css',
     'nui/admin/admin.js',
+    -- Panel gestion serveur NUI (F9, superadmin)
+    'nui/server-panel/server-panel.css',
+    'nui/server-panel/server-panel.js',
 }

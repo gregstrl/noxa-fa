@@ -192,6 +192,8 @@ end)
 CreateThread(function()
     while true do
         Wait(CFG.Jobs.payInterval)
+        -- Bascule live (panel gestion serveur) : paie désactivable sans restart.
+        if CFG.Systems and CFG.Systems.payroll == false then goto skipCycle end
         local paid, skipped = 0, 0
         for _, ply in pairs(Noxa.Players.getAll()) do
             local job = E.Jobs[ply.job]
@@ -223,6 +225,7 @@ CreateThread(function()
         if paid > 0 or skipped > 0 then
             U.print('info', 'Paie : %d versée(s), %d sautée(s).', paid, skipped)
         end
+        ::skipCycle::
     end
 end)
 

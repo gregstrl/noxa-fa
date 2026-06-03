@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · NUI 100% custom · oxmysql · Zéro ox_lib visuel
 
-## État actuel — beta-1.5 · 2026-06-03
+## État actuel — beta-1.6 · 2026-06-03
 
 | Système | État | Notes |
 |---|---|---|
@@ -12,7 +12,7 @@
 | Économie & Prix | ✅ | Doctrine salaires (bandes/h justifiées), TVA, taxe virement, loyers, entretien, amendes, plafond cash, catalogue véhicules + flux NUI |
 | Véhicules (concessions, garages) | ✅ | Concession F→S, garage sortir/remiser, fourrière (amende), persistance état (carburant/santé/mods) ; tuning 🟡 |
 | Menu admin NUI (F10) | ✅ | Panneau RageUI 9 sections (joueurs, véhicules, TP, éco, jobs, sanctions, annonces, logs, serveur) — **rang revérifié serveur + log par action** |
-| Panel gestion serveur | 🟡 | Infos serveur (joueurs/uptime/max) + logs filtrables intégrés au panneau admin |
+| Panel gestion serveur | ✅ | **Panel superadmin (F9) 8 onglets** : config live SANS restart — systèmes on/off, météo/heure, économie, boutiques, coordonnées (spawn/POI), jobs+grades, organisations, messages planifiés, whitelist. Mémoire + BDD + broadcast clients |
 | Anti-cheat & Panel staff | ✅ | Rate-limit, flag/violations, autoban, logs BDD + panneau staff NUI (sanctions, historique) |
 | Map · Blips · POI | ✅ | 14 catégories de POI (+ concession), blips, zones de proximité + prompt NUI |
 | Drogues & Trafic | ❌ | Non démarré (prévu prochaine session) |
@@ -22,7 +22,50 @@
 | Météo & Heure serveur | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
 | HUD premium (minimap, vitesse) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 08h admin + jobs actifs · 2026-06-03
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 12h panel gestion serveur · 2026-06-03
+
+### Session 12h — Panel gestion serveur in-game (F9, superadmin)
+
+Panneau superadmin pour **configurer le serveur en direct, sans aucun restart**.
+Nouveau module transverse `config-manager` (server) + `server-panel` (client/NUI).
+
+**Architecture** (`server/modules/config-manager/server.lua`)
+- Chaque **domaine** de config (economy, banking, fuel, systems, shops, spawn,
+  poi, enumsJobs, enumsGangs) est une **table vivante** déjà en mémoire. Une
+  modification = **mutation EN PLACE** (les modules conservent la référence,
+  donc voient le changement au prochain accès) **+ instantané JSON persisté**
+  dans `noxa_config`. Au boot, les instantanés **rejouent** par-dessus le code.
+- **Aucune table n'est remplacée par référence** : un `replaceContents` vide et
+  recopie le contenu → time.lua/security.lua/… qui ont capturé une **sous-table**
+  (`Noxa.Config.World`, `.Security`) continuent de voir la bonne donnée.
+- **Domaines « client »** (poi/spawn/shops/systems) **rediffusés** aux joueurs :
+  la carte (blips), les zones de proximité et le **PVP** se rafraîchissent à chaud.
+- Sérialisation des **grades** (clés entières `[0]`) protégée du round-trip JSON
+  (`fixGradeKeys`), restaurées en entiers au boot.
+
+**Sécurité** — ouverture **et** toutes les mutations réservées au rang
+**superadmin**, revérifié serveur à chaque event (`isSuper`), jamais aucune
+donnée client de confiance. Les **champs scalaires** passent par une **allowlist
+stricte** (domaine → clé → bornes min/max + type). Toute mutation est
+**journalisée** (`noxa_logs`, catégorie `config`). Rate-limit dédié.
+
+**8 onglets** (`nui/server-panel/`, z-index 60, ouvert via **F9**)
+1. **Serveur** — stats temps réel · bascules **on/off** (PVP, rotation météo,
+   paie, taxes, messages) **réellement effectives** (gardes dans jobs/economy) ·
+   **forcer météo** & **régler l'heure** en direct (API `WorldTime`).
+2. **Coordonnées** — point de spawn + **POI** (banque, ATM, garage…) : ajout/
+   retrait de points, bouton **« Ma position »** → refresh blips/zones immédiat.
+3. **Économie** — bornes de transaction, banque, carburant (mémoire + BDD).
+4. **Boutiques** — prix des articles (validés serveur à l'achat).
+5. **Jobs** — salaires par grade, **ajout/retrait de grade**, **création/
+   suppression de job** (les joueurs orphelins rebasculent « sans emploi »).
+6. **Organisations** — **création/suppression de gangs** (+ caisse société
+   auto), vue des soldes de toutes les sociétés.
+7. **Messages planifiés** — annonces serveur diffusées à intervalle (CRUD + on/off).
+8. **Whitelist** — accorder/retirer une whitelist d'emploi par Citizen ID + grade max.
+
+**BDD** — `noxa_config` (surcharges par domaine) + `noxa_scheduled_messages`
+(migration `003_config_manager.sql`, intégrées à `install.sql` idempotent).
 
 ### Session 08h — Menu Admin NUI (F10) · Jobs actifs (Police / EMS / Méca)
 

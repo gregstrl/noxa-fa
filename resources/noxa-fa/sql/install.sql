@@ -305,3 +305,26 @@ ON DUPLICATE KEY UPDATE
     `label` = VALUES(`label`), `weight` = VALUES(`weight`),
     `stackable` = VALUES(`stackable`), `usable` = VALUES(`usable`),
     `category` = VALUES(`category`);
+
+-- ---------------------------------------------------------------------
+--  Panel gestion serveur (config-manager) — surcharges live + messages
+--  Voir migration 003_config_manager.sql.
+-- ---------------------------------------------------------------------
+CREATE TABLE IF NOT EXISTS `noxa_config` (
+    `ckey`       VARCHAR(64)  NOT NULL,
+    `cvalue`     LONGTEXT     NOT NULL,
+    `updated_by` VARCHAR(64)  DEFAULT NULL,
+    `updated_at` TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
+                              ON UPDATE CURRENT_TIMESTAMP,
+    PRIMARY KEY (`ckey`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
+CREATE TABLE IF NOT EXISTS `noxa_scheduled_messages` (
+    `id`           INT UNSIGNED NOT NULL AUTO_INCREMENT,
+    `body`         VARCHAR(512) NOT NULL,
+    `interval_min` INT UNSIGNED NOT NULL DEFAULT 30,
+    `enabled`      TINYINT(1)   NOT NULL DEFAULT 1,
+    `created_by`   VARCHAR(64)  DEFAULT NULL,
+    `created_at`   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;

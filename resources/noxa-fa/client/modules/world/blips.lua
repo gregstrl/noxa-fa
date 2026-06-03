@@ -46,6 +46,12 @@ function Blip.clearAll()
     created = {}
 end
 
+--- Reconstruit l'intégralité des blips (POI modifiés à chaud par le panel).
+function Blip.rebuild()
+    Blip.clearAll()
+    Blip.buildAll()
+end
+
 CreateThread(function()
     while not NetworkIsSessionStarted() do Wait(200) end
     Blip.buildAll()

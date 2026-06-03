@@ -73,6 +73,8 @@ end
 ---@param rate? number défaut : TVA (Tax.sales)
 ---@return integer
 function Eco.taxOf(base, rate)
+    -- Bascule live (panel gestion serveur) : taxes désactivables sans restart.
+    if Noxa.Config.Systems and Noxa.Config.Systems.economyTax == false then return 0 end
     rate = rate or ECO.Tax.sales
     return math.floor((tonumber(base) or 0) * rate)
 end
@@ -205,6 +207,8 @@ end
 CreateThread(function()
     while true do
         Wait(ECO.Upkeep.interval)
+        -- Bascule live : entretien/loyers suspendus si les taxes sont coupées.
+        if Noxa.Config.Systems and Noxa.Config.Systems.economyTax == false then goto skipUpkeep end
         local players = Noxa.Players.getAll and Noxa.Players.getAll() or {}
         local n = 0
         for _, ply in pairs(players) do
@@ -212,6 +216,7 @@ CreateThread(function()
             n = n + 1
         end
         if n > 0 then U.debug('Cycle d\'entretien appliqué à %d joueur(s).', n) end
+        ::skipUpkeep::
     end
 end)
 
