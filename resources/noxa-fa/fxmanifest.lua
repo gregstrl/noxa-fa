@@ -11,6 +11,8 @@ version '0.5.0'
 -- ZÉRO ox_lib : toute l'interface est 100 % NUI custom (nui/).
 dependencies {
     'oxmysql',
+    -- MenuV : bibliothèque de menus unifiée (concession, garage, fourrière…).
+    'menuv',
 }
 
 -- =====================================================================
@@ -75,6 +77,8 @@ server_scripts {
 --  CLIENT  — nui.lua (pont) chargé en premier, avant toute UI
 -- =====================================================================
 client_scripts {
+    -- API MenuV (global `MenuV`) — chargée AVANT tout module qui ouvre un menu.
+    '@menuv/menuv.lua',
     'client/core/nui.lua',
     'client/core/spawn.lua',
     'client/core/ui.lua',
@@ -141,8 +145,7 @@ files {
     'nui/world/world.js',
     'nui/shop/shop.css',
     'nui/shop/shop.js',
-    'nui/vehicles/vehicles.css',
-    'nui/vehicles/vehicles.js',
+    -- Véhicules : menus migrés vers MenuV (plus de NUI custom dédiée).
     'nui/phone/phone.css',
     'nui/phone/phone.js',
     -- Jobs actifs (MDT police / atelier méca / fouille)

@@ -1,29 +1,56 @@
 # NOXA FA
-> Framework custom Noxa · NUI 100% custom · oxmysql · Zéro ox_lib visuel
+> Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — beta-1.8 · 2026-06-04
+## État actuel — beta-1.9 · 2026-06-04
 
 | Système | État | Notes |
 |---|---|---|
-| Core / Framework | ✅ | Comptes, multi-personnages, classe Player autoritaire, statebag répliqué |
-| Compatibilité ESX | ✅ | Ressource `es_extended` (shim) : `getSharedObject`, `ESX.GetPlayerFromId`, `xPlayer.addMoney/removeMoney/setJob/addInventoryItem/...`, callbacks serveur, `RegisterUsableItem`, events `esx:playerLoaded/setJob/addInventoryItem` — délègue à noxa-fa, zéro état dupliqué |
+| Framework Noxa + compat ESX | ✅ | Comptes, multi-personnages, classe Player autoritaire, statebag répliqué · shim `es_extended` (getSharedObject, xPlayer, callbacks, RegisterUsableItem, events `esx:*`) délègue à noxa-fa, zéro état dupliqué |
 | Spawn & Connexion | ✅ | Deferral (vérif ban), spawn robuste anti-gel (dégel garanti tout chemin) |
 | Création personnage NUI | ✅ | Caméra 3/4, head-blend, traits, overlays, vêtements — édition live + persistance |
-| Inventaire / Items | ✅ | Grille NUI drag&drop, hotbar 1-5, poids, use/jeter/donner — autorité serveur anti-dupe, 11 items |
-| Économie & Prix | ✅ | Doctrine salaires (bandes/h justifiées), TVA, taxe virement, loyers, entretien, amendes, plafond cash, catalogue véhicules + flux NUI |
-| Véhicules (concessions, garages) | ✅ | Concession F→S, garage sortir/remiser, fourrière (amende), persistance état (carburant/santé/mods) ; tuning 🟡 |
-| Menu admin NUI (F10) | ✅ | Panneau RageUI 9 sections (joueurs, véhicules, TP, éco, jobs, sanctions, annonces, logs, serveur) — **rang revérifié serveur + log par action** |
-| Panel gestion serveur | ✅ | **Panel superadmin (F9) 8 onglets** : config live SANS restart — systèmes on/off, météo/heure, économie, boutiques, coordonnées (spawn/POI), jobs+grades, organisations, messages planifiés, whitelist. Mémoire + BDD + broadcast clients |
-| Anti-cheat & Panel staff | ✅ | **Détection server-side** (speed/teleport/godmode/armes/spawn/argent) + échelle alerte→freeze→kick→ban auto · **Panel staff NUI (F3)** : fiches temps réel (license/Discord/IP/ping/FPS/position/session/score AC), spectate discret, screenshot, freeze, TP discrète, kick/ban, **alertes live** + journal `noxa_anticheat_logs` |
-| Map · Blips · POI | ✅ | 14 catégories de POI (+ concession), blips, zones de proximité + prompt NUI |
+| Inventaire / Items | ✅ | Grille NUI drag&drop, hotbar 1-5, poids, use/jeter/donner — autorité serveur anti-dupe (source unique `noxa_characters.inventory`), 11 items |
+| Économie & Prix | ✅ | Doctrine salaires (bandes/h justifiées), TVA, taxe virement, loyers, entretien, amendes, plafond cash, catalogue véhicules |
+| Véhicules (concessions, garages) | ✅ | **Menus MenuV** : concession F→S, garage sortir/remiser, fourrière (amende), persistance état (carburant/santé/mods) ; tuning 🟡 |
+| Menu Admin (F10) | ✅ | Panneau NUI 9 sections (joueurs, véhicules, TP, éco, jobs, sanctions, annonces, logs, serveur) — **rang revérifié serveur + log par action** |
+| Panel Gestion Serveur (F9) | ✅ | **Superadmin 8 onglets** : config live SANS restart — systèmes on/off, météo/heure, économie, boutiques, coordonnées (spawn/POI), jobs+grades, organisations, messages planifiés, whitelist. Mémoire + BDD + broadcast clients |
+| Anti-Cheat & Panel Staff (F3) | ✅ | **Détection server-side** (speed/teleport/godmode/armes/spawn/argent) + échelle alerte→freeze→kick→ban auto · panel staff NUI temps réel, spectate, screenshot, freeze, TP, kick/ban, alertes live + `noxa_anticheat_logs` |
+| Carte · Blips · POI | ✅ | 14 catégories de POI (+ concession), blips, zones de proximité + prompt NUI |
 | Drogues & Trafic | ❌ | Non démarré (prévu prochaine session) |
-| Téléphone NUI | 🟡 | Contacts, SMS temps réel, Twitter, Banque, Carte, Réglages ; appels à venir |
-| Jobs actifs (Police/EMS/Méca) | ✅ | Police (menottes/fouille/amende/prison/MDT), EMS (ranimer/soigner + état inconscient), Méca (réparer + atelier) — portée & rôle revérifiés serveur |
+| Téléphone | 🟡 | Contacts, SMS temps réel, Twitter, Banque, Carte, Réglages ; appels à venir (NUI custom) |
+| Jobs Police/EMS/Méca | ✅ | Police (menottes/fouille/amende/prison/MDT), EMS (ranimer/soigner + état inconscient), Méca (réparer + atelier) — portée & rôle revérifiés serveur |
+| Météo & Heure | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
 | Immobilier (maisons/apparts) | ✅ | Achat, entrée/sortie, verrou, mobilier — 4 paliers, persistance BDD |
-| Météo & Heure serveur | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
-| HUD premium (minimap, vitesse) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
+| HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
+| MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; concession/garage/fourrière migrés |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 20h compat ESX & intégrité SQL · 2026-06-04
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 04h — MenuV déployable & véhicules migrés · 2026-06-04
+
+### Session 04h — MenuV opérationnel & menus véhicules migrés
+
+**Bug d'intégration MenuV corrigé (réel, bloquant).** La ressource `menuv` avait été
+committée en **source non-buildée** (ThymonA/MenuV) : pas de `fxmanifest.lua` racine, pas
+de NUI compilé, et son `.gitignore` ignorait justement `dist/`, `build/` et `menuv.lua`.
+Résultat : la ressource **ne pouvait pas démarrer** et n'était même pas listée dans
+`server.cfg`. Corrections :
+- **Build** du NUI (`npm i && node build.js --mode=production`, Vue 2/webpack) → `dist/`
+  (HTML/JS/CSS compilés), `menuv.lua` (API consommateur), `menuv/components/*`, `stream/`
+  (texture `menuv.ytd`), `languages/`, `config.lua`, `fxmanifest.lua` racine.
+- **`.gitignore` réécrit** pour **tracker le runtime compilé** (dépôt de déploiement :
+  `dist/` & co. doivent être versionnés) tout en ignorant `node_modules/` et `build/`.
+- **`server.cfg`** : `ensure menuv` ajouté **avant** `noxa-fa`.
+- **`noxa-fa`** déclare désormais la dépendance `menuv` et charge `@menuv/menuv.lua`.
+
+**Véhicules migrés NUI → MenuV** (`client/modules/vehicles/client.lua`)
+- **Concession** : menu racine par **catégorie** (F→S) → sous-menus de véhicules avec prix
+  taxé et solde bancaire en sous-titre ; achat = `noxa:veh:buy` (serveur autoritaire).
+- **Garage / Fourrière** : menu reconstruit à chaque ouverture (état vivant) — *Sortir*
+  les remisés, *Remiser* les sortis (lecture carburant/santé locale), *Récupérer* la
+  fourrière contre amende.
+- Toute la logique serveur (ownership, transitions atomiques `stored↔out↔impound`, prix,
+  plaque unique) **inchangée** : seul le présentateur client a basculé sur MenuV.
+- **NUI véhicules custom supprimée** (`nui/vehicles/`, entrées `fxmanifest`/`index.html`/
+  `shell.js`) — conforme à la doctrine *« tous les menus in-game → MenuV »* (la NUI custom
+  reste réservée à HUD, notifications, banque, téléphone, inventaire).
 
 ### Session 20h — Couche de compatibilité ESX & intégrité SQL
 
@@ -256,13 +283,14 @@ Référence (propriétaire, lecture seule) : base Seed (`noxa-fa-seed`).
 ## Stack
 
 - **FiveM** (Lua 5.4)
-- **oxmysql** — accès base de données (seule dépendance)
-- **UI 100 % NUI custom** (HTML/CSS/JS natif) — **zéro ox_lib visuel**
+- **oxmysql** — accès base de données
+- **MenuV** (ThymonA) — bibliothèque de **menus in-game unifiée** (1 seule ressource)
+- **NUI custom** (HTML/CSS/JS natif) — HUD, notifications, banque, téléphone, inventaire,
+  sélection/création de personnage, boutique, panels admin/staff — **zéro ox_lib visuel**
 
+> Doctrine UI : **tout menu in-game passe par MenuV** ; la NUI custom maison est
+> réservée aux surfaces riches (HUD, notifs, banque, téléphone, inventaire).
 > Design premium dark, typographie Inter/Poppins, animations fluides.
-> Aucun composant d'interface tiers : notifications, menus, dialogues, HUD,
-> sélection de personnage, banque, **boutique, téléphone, immobilier** sont
-> entièrement maison (`nui/`).
 
 ## Architecture
 

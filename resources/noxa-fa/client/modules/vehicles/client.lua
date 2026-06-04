@@ -1,9 +1,10 @@
 -- =====================================================================
 --  NOXA FA — Module Véhicules (client-side)
---  Concession · Garage · Fourrière. Le client ne fait que présenter la NUI
---  et matérialiser/retirer l'entité ; toute la vérité (possession, prix,
---  état) est serveur. Spawn/despawn + lecture de l'état (carburant, santé)
---  au remisage. Mods appliqués depuis le JSON persisté.
+--  Concession · Garage · Fourrière. Présentation 100 % MenuV (menus
+--  in-game unifiés) ; le client ne fait que présenter les menus et
+--  matérialiser/retirer l'entité. Toute la vérité (possession, prix,
+--  état) reste serveur. Spawn/despawn + lecture de l'état (carburant,
+--  santé) au remisage. Mods appliqués depuis le JSON persisté.
 -- =====================================================================
 
 Noxa = Noxa or {}
@@ -12,13 +13,17 @@ Noxa.Vehicles = {}
 local Veh   = Noxa.Vehicles
 local CFG   = Noxa.Config
 local VCFG  = Noxa.Config.VehicleConfig
-local NUI   = Noxa.NUI
 local World = Noxa.World
+local money = Noxa.Utils.money
 
 -- Entités sorties suivies localement : [plate] = entité (pour le remisage).
 local out = {}
 local lastGarage = nil   -- coords du dernier garage utilisé (point de spawn)
-local uiOpen = false
+
+-- Menus MenuV (créés à la demande, réutilisés ensuite).
+local dealer      = { menu = nil, built = false }
+local garageMenu  = nil
+local garageOpen  = false
 
 -- ---------------------------------------------------------------------
 --  Application des modifications (depuis le JSON persisté)
@@ -44,6 +49,16 @@ local function readStatus(veh)
         engine = GetVehicleEngineHealth(veh),
         body   = GetVehicleBodyHealth(veh),
     }
+end
+
+--- Remise un véhicule sorti : lit son état local avant d'avertir le serveur.
+local function storeVehicle(plate)
+    local veh    = out[plate]
+    local status = (veh and DoesEntityExist(veh)) and readStatus(veh) or {}
+    TriggerServerEvent('noxa:veh:store', {
+        plate = plate, fuel = status.fuel, engine = status.engine, body = status.body,
+    })
+    MenuV:CloseAll()
 end
 
 -- ---------------------------------------------------------------------
@@ -93,30 +108,113 @@ RegisterNetEvent('noxa:veh:stored', function(data)
 end)
 
 RegisterNetEvent('noxa:veh:retrieved', function()
-    -- Rafraîchit la liste de garage si elle est ouverte.
-    if uiOpen and lastGarage then
+    -- Rafraîchit la liste de garage si elle est encore ouverte.
+    if garageOpen and lastGarage then
         TriggerServerEvent('noxa:veh:garage', VCFG.defaultGarage)
     end
 end)
 
 RegisterNetEvent('noxa:veh:bought', function(data)
     -- Met à jour le solde affiché dans la concession (achat suivant).
-    NUI.send('vehicles', 'bank', { bank = data.bank })
+    if dealer.menu then
+        dealer.menu.Subtitle = ('Compte bancaire : %s'):format(money(data.bank or 0))
+    end
 end)
 
 -- ---------------------------------------------------------------------
---  Réception des données serveur -> NUI
+--  CONCESSION — construction & ouverture du menu (MenuV)
 -- ---------------------------------------------------------------------
 RegisterNetEvent('noxa:veh:catalog', function(data)
-    uiOpen = true
-    NUI.setFocus(true)
-    NUI.send('vehicles', 'dealership', data)
+    if type(data) ~= 'table' or not data.catalog then return end
+    -- Le catalogue est statique côté serveur : on bâtit l'arborescence une
+    -- seule fois (catégories -> véhicules), puis on ne fait que rouvrir.
+    if not dealer.built then
+        dealer.menu = MenuV:CreateMenu('Concession', 'Sélectionnez un véhicule',
+            'topleft', 0, 150, 220, 'size-110', 'default', 'menuv', 'noxa_dealer')
+
+        for _, cls in ipairs(data.catalog) do
+            local sub = MenuV:CreateMenu(('Catégorie %s'):format(cls.class), cls.label,
+                'topleft', 0, 150, 220, 'size-110', 'default', 'menuv',
+                'noxa_dealer_' .. tostring(cls.class))
+
+            for _, v in ipairs(cls.vehicles) do
+                local spawn = v.spawn
+                sub:AddButton({
+                    icon        = '🚗',
+                    label       = v.label,
+                    description = ('Prix : %s — Acheter (livré au garage)'):format(money(v.price)),
+                    select      = function() TriggerServerEvent('noxa:veh:buy', spawn) end,
+                })
+            end
+
+            dealer.menu:AddButton({
+                label       = cls.label,
+                description = ('%d véhicule(s) dans cette catégorie'):format(#cls.vehicles),
+                value       = sub,
+            })
+        end
+        dealer.built = true
+    end
+
+    dealer.menu.Subtitle = ('Compte bancaire : %s'):format(money(data.bank or 0))
+    MenuV:OpenMenu(dealer.menu)
 end)
 
+-- ---------------------------------------------------------------------
+--  GARAGE / FOURRIÈRE — menu reconstruit à chaque ouverture (état vivant)
+-- ---------------------------------------------------------------------
 RegisterNetEvent('noxa:veh:garage', function(data)
-    uiOpen = true
-    NUI.setFocus(true)
-    NUI.send('vehicles', 'garage', data)
+    if type(data) ~= 'table' then return end
+    if not garageMenu then
+        garageMenu = MenuV:CreateMenu('Garage', '', 'topleft', 0, 150, 220,
+            'size-110', 'default', 'menuv', 'noxa_garage')
+        garageMenu:On('open',  function() garageOpen = true end)
+        garageMenu:On('close', function() garageOpen = false end)
+    end
+
+    garageMenu:ClearItems()
+    local n = 0
+
+    for _, v in ipairs(data.vehicles or {}) do
+        n = n + 1
+        local plate = v.plate
+        if v.state == 'out' then
+            garageMenu:AddButton({
+                icon        = '🅿️',
+                label       = ('%s [%s]'):format(v.label, plate),
+                description = 'Véhicule sorti — Remiser',
+                select      = function() storeVehicle(plate) end,
+            })
+        else -- 'stored'
+            garageMenu:AddButton({
+                icon        = '🚗',
+                label       = ('%s [%s]'):format(v.label, plate),
+                description = 'Remisé — Sortir le véhicule',
+                select      = function()
+                    TriggerServerEvent('noxa:veh:takeOut', plate)
+                    MenuV:CloseAll()
+                end,
+            })
+        end
+    end
+
+    for _, v in ipairs(data.impound or {}) do
+        n = n + 1
+        local plate = v.plate
+        garageMenu:AddButton({
+            icon        = '⛓️',
+            label       = ('%s [%s]'):format(v.label, plate),
+            description = ('Fourrière — Récupérer (amende %s)'):format(money(data.impoundFee)),
+            select      = function() TriggerServerEvent('noxa:veh:retrieve', plate) end,
+        })
+    end
+
+    if n == 0 then
+        garageMenu:AddButton({ label = 'Aucun véhicule', description = 'Vous n\'avez aucun véhicule ici.' })
+    end
+
+    garageMenu.Subtitle = ('%d véhicule(s)'):format(n)
+    MenuV:OpenMenu(garageMenu)
 end)
 
 -- ---------------------------------------------------------------------
@@ -131,49 +229,9 @@ World.on('garage', function(point)
     TriggerServerEvent('noxa:veh:garage', VCFG.defaultGarage)
 end)
 
--- ---------------------------------------------------------------------
---  Callbacks NUI -> Lua
--- ---------------------------------------------------------------------
-RegisterNUICallback('vehBuy', function(body, cb)
-    if body.spawn then TriggerServerEvent('noxa:veh:buy', body.spawn) end
-    cb('ok')
-end)
-
-RegisterNUICallback('vehTakeOut', function(body, cb)
-    if body.plate then TriggerServerEvent('noxa:veh:takeOut', body.plate) end
-    -- Fermeture immédiate du garage : on sort en voiture.
-    uiOpen = false
-    NUI.setFocus(false)
-    NUI.send('vehicles', 'close')
-    cb('ok')
-end)
-
-RegisterNUICallback('vehStore', function(body, cb)
-    local plate = body.plate
-    if plate then
-        local veh = out[plate]
-        local status = (veh and DoesEntityExist(veh)) and readStatus(veh) or {}
-        TriggerServerEvent('noxa:veh:store', {
-            plate = plate, fuel = status.fuel, engine = status.engine, body = status.body,
-        })
-    end
-    cb('ok')
-end)
-
-RegisterNUICallback('vehRetrieve', function(body, cb)
-    if body.plate then TriggerServerEvent('noxa:veh:retrieve', body.plate) end
-    cb('ok')
-end)
-
-RegisterNUICallback('vehClose', function(_, cb)
-    uiOpen = false
-    NUI.setFocus(false)
-    cb('ok')
-end)
-
--- Sécurité : libère le focus si la ressource s'arrête NUI ouverte.
+-- Sécurité : ferme tout menu ouvert si la ressource s'arrête.
 AddEventHandler('onResourceStop', function(res)
-    if res == GetCurrentResourceName() and uiOpen then NUI.releaseAll() end
+    if res == GetCurrentResourceName() then MenuV:CloseAll() end
 end)
 
 return Veh
