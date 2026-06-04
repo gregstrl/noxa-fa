@@ -233,6 +233,9 @@ function Player:useSlot(slot)
     end
     TriggerClientEvent('noxa:notify', self.source,
         ('Vous utilisez : %s'):format(it.label), 'inform')
+    -- Hook compat : les ressources tierces (couche ESX -> RegisterUsableItem)
+    -- peuvent réagir à l'usage d'un item. Émis APRÈS l'effet noxa autoritaire.
+    TriggerEvent('noxa:item:used', self.source, e.name, slot)
     return true
 end
 

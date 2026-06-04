@@ -26,6 +26,13 @@ RegisterNetEvent('noxa:notify', function(msg, kind)
     Noxa.UI.notify(msg, kind)
 end)
 
+-- Export client : permet aux ressources tierces (ex. couche compat ESX)
+-- d'afficher une notification via la NUI custom, sans dupliquer le rendu.
+exports('Notify', function(msg, kind, title)
+    if type(msg) ~= 'string' then return end
+    Noxa.UI.notify(msg, kind, title)
+end)
+
 -- Annonce serveur (broadcast staff) — toast « announce » plus visible.
 RegisterNetEvent('noxa:announce', function(msg)
     if type(msg) ~= 'string' then return end

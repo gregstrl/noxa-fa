@@ -1,11 +1,12 @@
 # NOXA FA
 > Framework custom Noxa · NUI 100% custom · oxmysql · Zéro ox_lib visuel
 
-## État actuel — beta-1.7 · 2026-06-03
+## État actuel — beta-1.8 · 2026-06-04
 
 | Système | État | Notes |
 |---|---|---|
 | Core / Framework | ✅ | Comptes, multi-personnages, classe Player autoritaire, statebag répliqué |
+| Compatibilité ESX | ✅ | Ressource `es_extended` (shim) : `getSharedObject`, `ESX.GetPlayerFromId`, `xPlayer.addMoney/removeMoney/setJob/addInventoryItem/...`, callbacks serveur, `RegisterUsableItem`, events `esx:playerLoaded/setJob/addInventoryItem` — délègue à noxa-fa, zéro état dupliqué |
 | Spawn & Connexion | ✅ | Deferral (vérif ban), spawn robuste anti-gel (dégel garanti tout chemin) |
 | Création personnage NUI | ✅ | Caméra 3/4, head-blend, traits, overlays, vêtements — édition live + persistance |
 | Inventaire / Items | ✅ | Grille NUI drag&drop, hotbar 1-5, poids, use/jeter/donner — autorité serveur anti-dupe, 11 items |
@@ -22,7 +23,45 @@
 | Météo & Heure serveur | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
 | HUD premium (minimap, vitesse) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 16h anti-cheat & panel staff · 2026-06-03
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 20h compat ESX & intégrité SQL · 2026-06-04
+
+### Session 20h — Couche de compatibilité ESX & intégrité SQL
+
+Concrétisation de la **promesse d'architecture** : *« tout script ESX tourne sans
+modification »*. Nouvelle ressource **`es_extended`** (shim mince) qui **délègue à
+noxa-fa** — aucune logique critique dupliquée, l'autorité reste server-side.
+
+**Pont serveur** (`resources/es_extended/server/main.lua`)
+- `exports['es_extended']:getSharedObject()` **+** API legacy `TriggerEvent('esx:getSharedObject', cb)`.
+- `ESX.GetPlayerFromId / GetPlayerFromIdentifier / GetPlayers / GetExtendedPlayers / GetNumPlayers`.
+- **xPlayer** (closures sur l'objet `Player` **vivant** de noxa, références Lua↔Lua) :
+  `getMoney/addMoney/removeMoney`, `getAccount(s)/addAccountMoney/removeAccountMoney/setAccountMoney/setMoney`
+  (mapping ESX `money`↔`cash`, `bank`↔`bank`), `getJob/setJob`,
+  `addInventoryItem/removeInventoryItem/getInventoryItem/getInventory/hasItem/getWeight`,
+  identité/coords/kick, variables `set/get`, `showNotification/triggerEvent`.
+- `ESX.RegisterServerCallback` + bridge `esx:triggerServerCallback`/`esx:serverCallback`.
+- `ESX.RegisterUsableItem` branché sur le nouvel event noxa **`noxa:item:used`** (émis
+  par `inventory:useSlot` après l'effet autoritaire). `ESX.RegisterCommand`, `ESX.Math/Table`.
+- **Miroir d'événements** : `noxa:playerLoaded` → `esx:playerLoaded` (serveur + client,
+  instantané sérialisable), `noxa:playerUnloaded` → `esx:playerDropped`, `setJob` → `esx:setJob`.
+
+**Pont client** (`resources/es_extended/client/main.lua`)
+- `getSharedObject`, `ESX.PlayerData/GetPlayerData/SetPlayerData/IsPlayerLoaded`.
+- `ESX.ShowNotification/TextUI` → **NUI custom noxa** (nouvel export client `noxa-fa:Notify`,
+  zéro feed GTA / zéro ox_lib), `ESX.TriggerServerCallback`, `ESX.Math`.
+- Synchronisation sur `noxa:client:playerDataUpdated` (statebag répliqué) → reconstruit
+  `ESX.PlayerData` (job au format ESX) et relaie `esx:setJob` / `esx:playerLoaded`.
+
+**Intégrité SQL** — correction d'un **bug d'installation réel** : `install.sql` racine
+était **périmé** (manquait `noxa_config`, `noxa_scheduled_messages`,
+`noxa_anticheat_logs`) → une install fraîche plantait au boot des modules config-manager
+/ anti-cheat. Resynchronisé depuis `resources/noxa-fa/sql/install.sql` (audit
+référencé⊆déclaré : **0 table manquante**).
+
+> Note de portée : `es_extended` couvre l'API ESX la plus utilisée par les scripts
+> tiers. Le bridge `RegisterUsableItem` exige que l'item existe au catalogue noxa
+> (`shared/items.lua`). L'argent sale ESX (`black_money`) n'est pas géré (noxa n'a
+> que `cash`/`bank`).
 
 ### Session 16h — Anti-cheat server-side & Panel staff (F3)
 
