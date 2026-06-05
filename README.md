@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — stable-2.2 · 2026-06-05
+## État actuel — stable-2.3 · 2026-06-05
 
 | Système | État | Notes |
 |---|---|---|
@@ -18,13 +18,47 @@
 | Drogues & Trafic | ✅ | **Chaîne récolte → transformation → vente** (cannabis/cocaïne/méth) via **MenuV** aux POI · 100 % autoritaire serveur (proximité revérifiée, cooldown, possession réelle) · alerte **dispatch police** probabiliste (blip GPS) · butin dans l'inventaire anti-dupe |
 | Activités légales | ✅ | **Pêche & chasse** via **MenuV** : achat d'outil, cueillette chronométrée (anim), butin probabiliste borné, **vente sur place** — proximité/outil/cooldown serveur |
 | Téléphone | 🟡 | Contacts, SMS temps réel, Twitter, Banque, Carte, Réglages ; appels à venir (NUI custom) |
-| Jobs Police/EMS/Méca | ✅ | Police (menottes/fouille/amende/prison/MDT), EMS (ranimer/soigner + état inconscient), Méca (réparer + atelier) — portée & rôle revérifiés serveur |
+| Jobs Police/EMS/Méca | ✅ | Police (menottes/fouille/amende/prison/MDT), EMS (ranimer/soigner + état inconscient), Méca (réparer + atelier) — portée & rôle revérifiés serveur · **menu patron `/boss` migré MenuV** (saisies numériques ID/grade/montant restent en dialogue NUI) |
 | Météo & Heure | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
-| Immobilier (maisons/apparts) | ✅ | Achat, entrée/sortie, verrou, mobilier — 4 paliers, persistance BDD |
+| Immobilier (maisons/apparts) | ✅ | Achat (confirmation MenuV), entrée/sortie, verrou, mobilier — **menus de porte & mobilier migrés MenuV** — 4 paliers, persistance BDD |
 | HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
-| MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; concession/garage/fourrière migrés |
+| MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; **migration in-game terminée** — concession/garage/fourrière + menu patron jobs + immobilier (porte/mobilier/confirmation). NUI custom réservée à HUD/notifs/banque/téléphone/inventaire/panels |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session QA — correctifs crash connexion & anti-cheat · 2026-06-05
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 05h — Migration MenuV terminée (jobs + immobilier) · 2026-06-05
+
+### Session 05h — Migration MenuV terminée (jobs + immobilier)
+
+Achèvement de la doctrine *« tout menu in-game → MenuV »* : les **derniers menus
+contextuels** encore servis par la NUI custom (`NUI.openMenu` / `NUI.confirm`) ont basculé
+sur MenuV, en reprenant à l'identique le pattern de la concession/garage (création
+paresseuse + `ClearItems` à chaque ouverture pour refléter l'état vivant). **Zéro nouvelle
+feature** : seul le présentateur client change, toute la logique serveur (droits patron,
+ownership, achats, verrou) est **inchangée**.
+
+**Jobs — menu patron `/boss`** (`client/modules/jobs/client.lua`)
+- Menu d'actions (Embaucher / Promouvoir / Licencier / Caisse Déposer / Retirer) →
+  **MenuV** (`noxa_boss`).
+- Les **saisies numériques** (ID joueur, grade, montant) **restent des dialogues NUI** :
+  MenuV n'offre aucun champ de saisie libre, et les remplacer par des sliders à plage
+  arbitraire aurait été une nouvelle feature / un changement de comportement. La sélection
+  MenuV ferme le menu (`MenuV:CloseAll()`) avant d'ouvrir le dialogue de saisie.
+
+**Immobilier** (`client/modules/properties/client.lua`)
+- **Menu de porte** (Acheter / Entrer / Verrouiller) → MenuV (`noxa_property`), reconstruit
+  à chaque ouverture (état propriété/verrou vivant).
+- **Confirmation d'achat** → sous-menu MenuV *Acheter / Annuler* (`noxa_property_confirm`)
+  en remplacement de `NUI.confirm`.
+- **Menu mobilier** (`/meubles`) → MenuV (`noxa_furniture`) ; placement répété naturel
+  (le menu reste ouvert), *Tout retirer* conservé.
+- `onResourceStop` ferme désormais aussi tout menu MenuV ouvert.
+
+**Reste NUI (conforme doctrine)** : HUD, notifications, banque, téléphone, inventaire,
+panels admin/gestion-serveur/staff, et les **dialogues de saisie** (`NUI.input`) — aucun
+équivalent MenuV. La couche `nui/menus/` n'est plus utilisée que pour ces saisies.
+
+**Vérifs** : les deux modules **parsent** (`lua5.4 -p`), aucun appel `NUI.openMenu` /
+`NUI.confirm` résiduel hors `core/nui.lua`, intégrité SQL inchangée (`comm` table↔install
+vide), dépendance `menuv` déjà déclarée (ressource unique `noxa-fa`).
 
 ### Session QA — Correctifs de stabilité (crashs connexion + faux positifs AC)
 

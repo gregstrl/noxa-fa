@@ -2,7 +2,7 @@
 --  NOXA FA — Immobilier (client-side)
 --  • Blips « à vendre » (orange) sur les biens libres.
 --  • Portes interactives enregistrées dans le système de zones unifié :
---    menu contextuel NUI custom (Acheter / Entrer / Verrouiller / Mobilier).
+--    menu contextuel MenuV (Acheter / Entrer / Verrouiller / Mobilier).
 --  • Téléportation intérieur/extérieur + rendu du mobilier sauvegardé.
 --  Aucune donnée n'est de confiance : tout transite par le serveur autoritaire.
 -- =====================================================================
@@ -11,9 +11,13 @@ Noxa = Noxa or {}
 Noxa.Realty = {}
 
 local CFG   = Noxa.Config
-local NUI   = Noxa.NUI
 local World = Noxa.World
 local Realty = Noxa.Realty
+
+-- Menus MenuV (créés à la demande, réutilisés ensuite).
+local doorMenu      = nil
+local confirmMenu   = nil
+local furnitureMenu = nil
 
 local properties = {}      -- liste reçue du serveur
 local saleBlips = {}       -- handles des blips « à vendre »
@@ -67,11 +71,28 @@ function Realty.rebuildDoors()
 end
 
 -- ---------------------------------------------------------------------
---  Menu de porte (contextuel NUI custom)
+--  Menu de porte (contextuel MenuV)
 -- ---------------------------------------------------------------------
 local function citizenId()
     local d = Noxa.GetPlayerData and Noxa.GetPlayerData()
     return d and d.citizenid or nil
+end
+
+--- Confirmation d'achat (sous-menu MenuV Acheter / Annuler).
+local function confirmBuy(p)
+    if not confirmMenu then
+        confirmMenu = MenuV:CreateMenu('Achat immobilier', '', 'topleft', 0, 150, 220,
+            'size-110', 'default', 'menuv', 'noxa_property_confirm')
+    else
+        confirmMenu:ClearItems()
+    end
+    confirmMenu.Subtitle = ('Acheter « %s » pour %s ?'):format(p.label, Noxa.Utils.money(p.price))
+    confirmMenu:AddButton({ icon = '✅', label = 'Acheter', select = function()
+        TriggerServerEvent('noxa:prop:buy', p.id)
+        MenuV:CloseAll()
+    end })
+    confirmMenu:AddButton({ icon = '✖️', label = 'Annuler', select = function() MenuV:CloseAll() end })
+    MenuV:OpenMenu(confirmMenu)
 end
 
 World.on('property', function(point)
@@ -80,33 +101,42 @@ World.on('property', function(point)
     local cid = citizenId()
     local isOwner = p.owner ~= nil and p.owner == cid
     local tier = CFG.PropertyTiers[p.tier]
-    local options = {}
+
+    -- Menu reconstruit à chaque ouverture (état vivant : propriété/verrou).
+    if not doorMenu then
+        doorMenu = MenuV:CreateMenu(p.label, '', 'topleft', 0, 150, 220,
+            'size-110', 'default', 'menuv', 'noxa_property')
+    else
+        doorMenu:ClearItems()
+    end
+    doorMenu.Title = p.label
+    doorMenu.Subtitle = tier and tier.label or ''
 
     if not p.owner then
-        options[#options + 1] = { id = 'buy',
-            label = ('Acheter — %s'):format(Noxa.Utils.money(p.price)),
-            description = tier and tier.label or p.tier, icon = '🏠' }
+        doorMenu:AddButton({
+            icon        = '🏠',
+            label       = ('Acheter — %s'):format(Noxa.Utils.money(p.price)),
+            description = tier and tier.label or p.tier,
+            select      = function() confirmBuy(p) end,
+        })
     elseif isOwner then
-        options[#options + 1] = { id = 'enter', label = 'Entrer', icon = '🚪' }
-        options[#options + 1] = { id = 'lock',
-            label = p.locked and 'Déverrouiller' or 'Verrouiller', icon = p.locked and '🔓' or '🔒' }
+        doorMenu:AddButton({ icon = '🚪', label = 'Entrer', select = function()
+            TriggerServerEvent('noxa:prop:enter', p.id)
+            MenuV:CloseAll()
+        end })
+        doorMenu:AddButton({
+            icon   = p.locked and '🔓' or '🔒',
+            label  = p.locked and 'Déverrouiller' or 'Verrouiller',
+            select = function()
+                TriggerServerEvent('noxa:prop:lock', p.id, not p.locked)
+                MenuV:CloseAll()
+            end,
+        })
     else
-        options[#options + 1] = { id = 'occupied', label = 'Propriété privée', description = "Occupé", icon = '⛔' }
+        doorMenu:AddButton({ icon = '⛔', label = 'Propriété privée', description = 'Occupé' })
     end
 
-    NUI.openMenu({ title = p.label, subtitle = tier and tier.label or '', options = options }, function(opt)
-        if opt == 'buy' then
-            NUI.confirm({
-                title = 'Achat immobilier',
-                message = ('Acheter « %s » pour %s ?'):format(p.label, Noxa.Utils.money(p.price)),
-                confirmText = 'Acheter', danger = false,
-            }, function(ok) if ok then TriggerServerEvent('noxa:prop:buy', p.id) end end)
-        elseif opt == 'enter' then
-            TriggerServerEvent('noxa:prop:enter', p.id)
-        elseif opt == 'lock' then
-            TriggerServerEvent('noxa:prop:lock', p.id, not p.locked)
-        end
-    end)
+    MenuV:OpenMenu(doorMenu)
 end)
 
 -- ---------------------------------------------------------------------
@@ -203,20 +233,25 @@ local function openFurnitureMenu()
     if not current then
         return Noxa.UI.notify('Vous devez être à l\'intérieur de votre bien.', 'error')
     end
-    local opts = { { id = '__clear', label = 'Tout retirer', icon = '🗑' } }
-    for i, f in ipairs(CFG.Furniture) do
-        opts[#opts + 1] = { id = tostring(i), label = f.label, icon = f.emoji }
+    if not furnitureMenu then
+        furnitureMenu = MenuV:CreateMenu('Mobilier', 'Placer devant vous', 'topleft', 0, 150, 220,
+            'size-110', 'default', 'menuv', 'noxa_furniture')
+    else
+        furnitureMenu:ClearItems()
     end
-    NUI.openMenu({ title = 'Mobilier', subtitle = 'Placer devant vous', options = opts }, function(opt)
-        if opt == '__clear' then
-            clearFurniture()
-            current.furniture = {}
-            saveFurniture()
-        elseif opt then
-            local item = CFG.Furniture[tonumber(opt)]
+    furnitureMenu:AddButton({ icon = '🗑', label = 'Tout retirer', select = function()
+        clearFurniture()
+        current.furniture = {}
+        saveFurniture()
+    end })
+    for i, f in ipairs(CFG.Furniture) do
+        local idx = i
+        furnitureMenu:AddButton({ icon = f.emoji, label = f.label, select = function()
+            local item = CFG.Furniture[idx]
             if item then placeInFront(item.model); saveFurniture() end
-        end
-    end)
+        end })
+    end
+    MenuV:OpenMenu(furnitureMenu)
 end
 
 RegisterCommand('meubles', openFurnitureMenu, false)
@@ -233,5 +268,8 @@ CreateThread(function()
 end)
 
 AddEventHandler('onResourceStop', function(res)
-    if res == GetCurrentResourceName() then clearFurniture() end
+    if res == GetCurrentResourceName() then
+        clearFurniture()
+        MenuV:CloseAll()
+    end
 end)

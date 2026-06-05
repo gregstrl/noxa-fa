@@ -1,11 +1,16 @@
 -- =====================================================================
 --  NOXA FA — Module Emplois (client-side)
---  Prise/fin de service + menu patron 100 % NUI custom (zéro ox_lib).
---  Toute la logique est serveur ; le client n'émet que des intentions.
+--  Prise/fin de service + menu patron (MenuV). Les saisies numériques
+--  (ID joueur, grade, montant) restent des dialogues NUI : MenuV n'offre
+--  pas de champ de saisie libre. Toute la logique est serveur ; le client
+--  n'émet que des intentions.
 -- =====================================================================
 
 Noxa = Noxa or {}
 local NUI = Noxa.NUI
+
+-- Menu patron MenuV (créé à la demande, réutilisé ensuite).
+local bossMenu = nil
 
 -- Panneau NUI partagé des jobs actifs (MDT police, atelier méca, fouille).
 -- Fermeture pilotée par le système anti-superposition (ouverture d'un autre panneau).
@@ -37,6 +42,15 @@ local function askTargetId(title, onValue)
     end)
 end
 
+--- Saisie d'un montant de caisse (dépôt / retrait) via dialogue NUI.
+local function askAmount(action)
+    NUI.input({ title = action == 'deposit' and 'Déposer en caisse' or 'Retirer de la caisse', fields = {
+        { name = 'amount', label = 'Montant', type = 'number', min = 1, required = true },
+    } }, function(v)
+        if v then TriggerServerEvent('noxa:job:society:' .. action, tonumber(v.amount)) end
+    end)
+end
+
 -- /boss : menu patron (visible seulement si le joueur a les droits).
 RegisterCommand('boss', function()
     local data = Noxa.GetPlayerData and Noxa.GetPlayerData()
@@ -44,34 +58,54 @@ RegisterCommand('boss', function()
         return Noxa.UI.notify('Vous n\'êtes pas responsable d\'une société.', 'error')
     end
 
-    NUI.openMenu({
-        title = ('Gestion — %s'):format(data.job.label or data.job.name),
-        subtitle = 'Actions de direction',
-        options = {
-            { id = 'hire',     label = 'Embaucher',                  description = 'Recruter le joueur le plus proche par ID', icon = '➕' },
-            { id = 'grade',    label = 'Promouvoir / rétrograder',   description = 'Changer le grade d\'un employé',           icon = '⇅' },
-            { id = 'fire',     label = 'Licencier',                  description = 'Renvoyer un employé',                      icon = '➖', danger = true },
-            { id = 'deposit',  label = 'Caisse — Déposer',           description = 'Verser de votre banque vers la société',   icon = '⬇' },
-            { id = 'withdraw', label = 'Caisse — Retirer',           description = 'Retirer de la caisse vers votre banque',   icon = '⬆' },
-        },
-    }, function(option)
-        if option == 'hire' then
+    if not bossMenu then
+        bossMenu = MenuV:CreateMenu('Gestion', '', 'topleft', 0, 150, 220,
+            'size-110', 'default', 'menuv', 'noxa_boss')
+    else
+        bossMenu:ClearItems()
+    end
+    bossMenu.Title = ('Gestion — %s'):format(data.job.label or data.job.name)
+    bossMenu.Subtitle = 'Actions de direction'
+
+    bossMenu:AddButton({
+        icon = '➕', label = 'Embaucher', description = 'Recruter le joueur le plus proche par ID',
+        select = function()
+            MenuV:CloseAll()
             askTargetId('Embaucher un joueur', function(id) TriggerServerEvent('noxa:job:hire', id) end)
-        elseif option == 'fire' then
-            askTargetId('Licencier un joueur', function(id) TriggerServerEvent('noxa:job:fire', id) end)
-        elseif option == 'grade' then
+        end,
+    })
+    bossMenu:AddButton({
+        icon = '⇅', label = 'Promouvoir / rétrograder', description = 'Changer le grade d\'un employé',
+        select = function()
+            MenuV:CloseAll()
             NUI.input({ title = 'Changer de grade', fields = {
                 { name = 'id', label = 'ID du joueur', type = 'number', min = 1, required = true },
                 { name = 'grade', label = 'Nouveau grade', type = 'number', min = 0, required = true },
             } }, function(v)
                 if v then TriggerServerEvent('noxa:job:setGrade', tonumber(v.id), tonumber(v.grade)) end
             end)
-        elseif option == 'deposit' or option == 'withdraw' then
-            NUI.input({ title = option == 'deposit' and 'Déposer en caisse' or 'Retirer de la caisse', fields = {
-                { name = 'amount', label = 'Montant', type = 'number', min = 1, required = true },
-            } }, function(v)
-                if v then TriggerServerEvent('noxa:job:society:' .. option, tonumber(v.amount)) end
-            end)
-        end
-    end)
+        end,
+    })
+    bossMenu:AddButton({
+        icon = '➖', label = 'Licencier', description = 'Renvoyer un employé',
+        select = function()
+            MenuV:CloseAll()
+            askTargetId('Licencier un joueur', function(id) TriggerServerEvent('noxa:job:fire', id) end)
+        end,
+    })
+    bossMenu:AddButton({
+        icon = '⬇', label = 'Caisse — Déposer', description = 'Verser de votre banque vers la société',
+        select = function() MenuV:CloseAll(); askAmount('deposit') end,
+    })
+    bossMenu:AddButton({
+        icon = '⬆', label = 'Caisse — Retirer', description = 'Retirer de la caisse vers votre banque',
+        select = function() MenuV:CloseAll(); askAmount('withdraw') end,
+    })
+
+    MenuV:OpenMenu(bossMenu)
 end, false)
+
+-- Sécurité : ferme tout menu MenuV ouvert si la ressource s'arrête.
+AddEventHandler('onResourceStop', function(res)
+    if res == GetCurrentResourceName() then MenuV:CloseAll() end
+end)
