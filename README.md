@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — stable-2.7 · 2026-06-05
+## État actuel — stable-2.9 · 2026-06-05
 
 | Système | État | Notes |
 |---|---|---|
@@ -18,13 +18,46 @@
 | Drogues & Trafic | ✅ | **Chaîne récolte → transformation → vente** (cannabis/cocaïne/méth) via **MenuV** aux POI · 100 % autoritaire serveur (proximité revérifiée, cooldown, possession réelle) · alerte **dispatch police** probabiliste (blip GPS) · butin dans l'inventaire anti-dupe |
 | Activités légales | ✅ | **Pêche & chasse** via **MenuV** : achat d'outil, cueillette chronométrée (anim), butin probabiliste borné, **vente sur place** — proximité/outil/cooldown serveur |
 | Téléphone | 🟡 | **Refonte visuelle « iOS premium » (Option C)** : dynamic island, dock translucide, grille d'apps, bulles SMS, carte de solde dégradée — calquée sur le design de référence Claude Design, **100 % vraies données FiveM** (Contacts, SMS temps réel, Canari, Banque, Carte, Réglages) ; appels à venir |
-| Jobs Police/EMS/Méca | ✅ | Police (menottes/fouille/amende/prison/MDT), EMS (ranimer/soigner + état inconscient), Méca (réparer + atelier) — portée & rôle revérifiés serveur · **menu patron `/boss` migré MenuV** (saisies numériques ID/grade/montant restent en dialogue NUI) |
+| Jobs Police/EMS/Méca | ✅ | Police (menottes/fouille/amende/prison/MDT), EMS (ranimer/soigner + état inconscient), Méca (réparer + **atelier `/atelier` migré MenuV**) — portée & rôle revérifiés serveur · **menu patron `/boss` migré MenuV** (saisies numériques ID/grade/montant restent en dialogue NUI) |
 | Météo & Heure | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
 | Immobilier (maisons/apparts) | ✅ | Achat (confirmation MenuV), entrée/sortie, verrou, mobilier — **menus de porte & mobilier migrés MenuV** — 4 paliers, persistance BDD, **loyers cycle fiscal** (puits monétaire, bascule live F9, impayé→verrou) |
 | HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
-| MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; **migration in-game terminée** — concession/garage/fourrière + menu patron jobs + immobilier (porte/mobilier/confirmation). NUI custom réservée à HUD/notifs/banque/téléphone/inventaire/panels |
+| MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; **migration in-game terminée** — concession/garage/fourrière + menu patron jobs + immobilier (porte/mobilier/confirmation) + **boutique épicerie** + **atelier mécanicien `/atelier`**. NUI custom réservée à HUD/notifs/banque/téléphone/inventaire/panels (admin/staff/gestion/anti-cheat) |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — QA finale (fuite de focus designs) · 2026-06-05
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — Migration MenuV (boutique + atelier) · 2026-06-05
+
+### Session MenuV — Boutique épicerie & atelier mécanicien migrés NUI → MenuV
+
+Poursuite de la doctrine *« tout menu in-game → MenuV »* (zéro nouvelle feature).
+Les **deux derniers menus d'interaction encore en NUI** basculent sur MenuV, en
+reprenant à l'identique le pattern éprouvé concession/garage/drogues
+(`MenuV:CreateMenu` + `:AddButton`, ressource `'menuv'`, `MenuV:CloseAll()` au
+`onResourceStop`).
+
+- **Boutique / épicerie** (`/world/shop.lua`, déclenchée par la zone POI `shop`) :
+  le catalogue NUI plein écran (`nui/shop/`) est remplacé par un menu MenuV
+  `noxa_shop_<key>` construit depuis `C.Shops[key].items` (un bouton par article
+  avec emoji + prix). L'achat reste une **simple intention** : `noxa:shop:buy`
+  est inchangé côté serveur (prix, solde et effets faim/soif **revérifiés et
+  débités serveur**, zéro confiance). Le menu reste ouvert pour enchaîner les
+  achats. `zones.lua` appelle désormais `Noxa.Shop.open(key, label, items)` au
+  lieu d'ouvrir la NUI.
+- **Atelier mécanicien** (`/atelier`, `jobs/mechanic.lua`) : le panneau NUI à deux
+  boutons (Réparer / Nettoyer) devient un menu MenuV `noxa_mech_atelier`. La
+  logique métier (`startRepair` validé/consommé serveur, nettoyage du véhicule le
+  plus proche) est **inchangée** : seul le présentateur a basculé.
+- **Nettoyage** : suppression de la NUI morte — dossier `nui/shop/` retiré, vue
+  `atelier` + callbacks `mechRepair`/`mechWash` retirés de `nui/jobs/jobs.js`,
+  entrées `fxmanifest`/`index.html` correspondantes nettoyées. Les `RegisterNUICallback`
+  `shopClose`/`shopBuy` et le sync cash NUI de la boutique sont supprimés.
+
+**Vérifications (aucun nouveau bug introduit) :**
+- **Intégrité SQL** : 0 table référencée en code absente de `install.sql` ; les
+  deux `install.sql` (racine + `resources/noxa-fa/sql/`) restent **identiques**.
+- **Aucune référence résiduelle** : `grep` à blanc sur `nui/shop`, `shopBuy`,
+  `shopClose`, `mechRepair`, `mechWash`, `'jobs', 'atelier'`.
+- **fxmanifest** : dépendance `menuv` déjà déclarée, `@menuv/menuv.lua` chargé
+  avant tout module ; entrées `nui/shop/*` retirées du bloc `files`.
 
 ### Session QA finale — Audit de fin de journée (bugfix + hotfix)
 

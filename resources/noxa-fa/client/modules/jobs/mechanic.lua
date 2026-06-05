@@ -2,11 +2,10 @@
 --  NOXA FA — Job actif MÉCANICIEN (client-side)
 --  • /reparer : repère le véhicule le plus proche, demande au serveur
 --    (qui consomme le kit) puis joue l'animation + remet le véhicule à neuf.
---  • /atelier : NUI atelier (réparer / nettoyer).
+--  • /atelier : menu MenuV atelier (réparer / nettoyer).
 -- =====================================================================
 
 Noxa = Noxa or {}
-local NUI = Noxa.NUI
 local CFG = Noxa.Config.JobActions.mechanic
 
 local pendingVehicle = nil   -- véhicule visé en attente de validation serveur
@@ -75,24 +74,12 @@ RegisterNetEvent('noxa:mechanic:repairStart', function(duration)
 end)
 
 -- ---------------------------------------------------------------------
---  Atelier NUI
+--  Atelier — menu MenuV (réparer / nettoyer le véhicule le plus proche).
 -- ---------------------------------------------------------------------
-RegisterCommand('atelier', function()
-    local data = Noxa.GetPlayerData and Noxa.GetPlayerData()
-    if not data or not data.job or data.job.name ~= 'mechanic' then
-        return Noxa.UI.notify('Atelier réservé aux mécaniciens.', 'error')
-    end
-    NUI.openPanel('jobs')
-    NUI.setFocus(true)
-    NUI.send('jobs', 'atelier', { society = data.job.label or 'Atelier' })
-end, false)
+local atelierMenu
 
-RegisterNUICallback('mechRepair', function(_, cb)
-    startRepair()
-    cb('ok')
-end)
-
-RegisterNUICallback('mechWash', function(_, cb)
+--- Nettoie le véhicule le plus proche (action atelier).
+local function washNearest()
     local veh = nearestVehicle()
     if veh ~= 0 then
         SetVehicleDirtLevel(veh, 0.0)
@@ -100,5 +87,32 @@ RegisterNUICallback('mechWash', function(_, cb)
     else
         Noxa.UI.notify('Aucun véhicule à proximité.', 'error')
     end
-    cb('ok')
-end)
+end
+
+RegisterCommand('atelier', function()
+    local data = Noxa.GetPlayerData and Noxa.GetPlayerData()
+    if not data or not data.job or data.job.name ~= 'mechanic' then
+        return Noxa.UI.notify('Atelier réservé aux mécaniciens.', 'error')
+    end
+    if not atelierMenu then
+        atelierMenu = MenuV:CreateMenu(data.job.label or 'Atelier', 'Atelier mécanicien',
+            'topleft', 0, 150, 220, 'size-110', 'default', 'menuv', 'noxa_mech_atelier')
+        atelierMenu:AddButton({
+            icon = '🔧', label = 'Réparer le véhicule',
+            description = 'Remise à neuf du véhicule le plus proche',
+            select = function()
+                MenuV:CloseAll()
+                startRepair()
+            end,
+        })
+        atelierMenu:AddButton({
+            icon = '🧽', label = 'Nettoyer le véhicule',
+            description = 'Retire la saleté du véhicule le plus proche',
+            select = function()
+                MenuV:CloseAll()
+                washNearest()
+            end,
+        })
+    end
+    MenuV:OpenMenu(atelierMenu)
+end, false)

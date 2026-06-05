@@ -157,17 +157,12 @@ World.on('bank', function()
     if Noxa.Banking and Noxa.Banking.open then Noxa.Banking.open() end
 end)
 
--- Épicerie : ouvre la boutique NUI (catalogue servi par la config partagée).
+-- Épicerie : ouvre le menu MenuV de la boutique (catalogue servi par la
+-- config partagée). L'achat est validé et débité côté serveur.
 World.on('shop', function(point)
     local shop = CFG.Shops[point.extra or 'grocery']
     if not shop then return end
-    NUI.setFocus(true)
-    NUI.send('shop', 'open', {
-        shop  = point.extra or 'grocery',
-        label = shop.label,
-        items = shop.items,
-        cash  = (Noxa.GetPlayerData and Noxa.GetPlayerData() or {}).cash or 0,
-    })
+    Noxa.Shop.open(point.extra or 'grocery', shop.label, shop.items)
 end)
 
 AddEventHandler('onResourceStop', function(res)

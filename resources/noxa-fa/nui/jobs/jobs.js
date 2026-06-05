@@ -1,11 +1,11 @@
 /* =====================================================================
-   NOXA FA — NUI des jobs actifs (MDT police · atelier méca · fouille)
+   NOXA FA — NUI des jobs actifs (MDT police · fouille)
    Messages Lua -> NUI (app:'jobs') :
      • 'mdt'     data:{ officer, units:[{id,name,grade}] }
-     • 'atelier' data:{ society }
      • 'search'  data:{ name, id, cash, items:[{name,label,emoji,count}] }
      • 'close'
-   Callbacks NUI -> Lua : jobsClose, mechRepair, mechWash
+   Callbacks NUI -> Lua : jobsClose
+   (Atelier mécanicien migré vers MenuV — voir client/modules/jobs/mechanic.lua.)
    ===================================================================== */
 
 const NoxaJobs = (() => {
@@ -49,7 +49,6 @@ const NoxaJobs = (() => {
 
     function render() {
         if (view === 'mdt') return renderMDT();
-        if (view === 'atelier') return renderAtelier();
         if (view === 'search') return renderSearch();
     }
 
@@ -69,20 +68,6 @@ const NoxaJobs = (() => {
                     <div class="job-row-qty">ID ${u.id}</div>
                 </div>`).join('') : '<div class="job-empty">Aucun agent en service.</div>'}`;
         frame('MDT — LSPD', 'Terminal de données mobile', body);
-    }
-
-    /* --- Atelier mécanicien ------------------------------------------- */
-    function renderAtelier() {
-        const body = `
-            <div class="job-section">Actions atelier</div>
-            <div class="job-actions">
-                <button class="btn btn-primary" id="atl-repair">🔧 Réparer le véhicule</button>
-                <button class="btn" id="atl-wash">🧽 Nettoyer le véhicule</button>
-            </div>
-            <div class="job-empty">Placez-vous près d'un véhicule avant d'agir.</div>`;
-        frame('Atelier', Noxa.esc(data.society || 'Mécanicien'), body);
-        root.querySelector('#atl-repair').addEventListener('click', () => { Noxa.post('mechRepair', {}); close(); });
-        root.querySelector('#atl-wash').addEventListener('click', () => { Noxa.post('mechWash', {}); });
     }
 
     /* --- Fouille (résultat lecture seule) ----------------------------- */
@@ -106,7 +91,6 @@ const NoxaJobs = (() => {
     function handleEscape() { if (!open) return false; close(); return true; }
 
     Noxa.on('jobs', 'mdt', (d) => show('mdt', d));
-    Noxa.on('jobs', 'atelier', (d) => show('atelier', d));
     Noxa.on('jobs', 'search', (d) => show('search', d));
     Noxa.on('jobs', 'close', close);
 

@@ -21,7 +21,6 @@
     <link rel="stylesheet" href="creator/creator.css" />
     <link rel="stylesheet" href="banking/banking.css" />
     <link rel="stylesheet" href="world/world.css" />
-    <link rel="stylesheet" href="shop/shop.css" />
     <link rel="stylesheet" href="phone/phone.css" />
     <link rel="stylesheet" href="economy/economy.css" />
     <link rel="stylesheet" href="jobs/jobs.css" />
@@ -56,8 +55,7 @@
     <!-- Plein écran : banque -->
     <div id="banking" class="fullscreen hidden"></div>
 
-    <!-- Plein écran : boutique (épicerie) -->
-    <div id="shop" class="fullscreen hidden"></div>
+    <!-- Boutique (épicerie) : menu migré vers MenuV (plus de NUI dédiée). -->
 
     <!-- Monde : prompt d'interaction + jauge carburant (informatif) -->
     <div id="world-prompt"></div>
@@ -66,7 +64,7 @@
     <!-- Smartphone (couche dédiée, animation d'ouverture) -->
     <div id="phone"></div>
 
-    <!-- Jobs actifs : MDT police / atelier méca / fouille (z-index 50) -->
+    <!-- Jobs actifs : MDT police / fouille (z-index 50) — atelier méca migré MenuV -->
     <div id="jobs" class="hidden"></div>
 
     <!-- Panneau d'administration (overlay staff, z-index 60) -->
@@ -94,7 +92,6 @@
     <script src="creator/creator.js"></script>
     <script src="banking/banking.js"></script>
     <script src="world/world.js"></script>
-    <script src="shop/shop.js"></script>
     <script src="phone/phone.js"></script>
     <script src="jobs/jobs.js"></script>
     <script src="admin/admin.js"></script>

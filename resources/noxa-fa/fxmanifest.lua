@@ -153,12 +153,10 @@ files {
     'nui/banking/banking.js',
     'nui/world/world.css',
     'nui/world/world.js',
-    'nui/shop/shop.css',
-    'nui/shop/shop.js',
-    -- Véhicules : menus migrés vers MenuV (plus de NUI custom dédiée).
+    -- Boutique & véhicules : menus migrés vers MenuV (plus de NUI custom dédiée).
     'nui/phone/phone.css',
     'nui/phone/phone.js',
-    -- Jobs actifs (MDT police / atelier méca / fouille)
+    -- Jobs actifs (MDT police / fouille) — atelier méca migré vers MenuV
     'nui/jobs/jobs.css',
     'nui/jobs/jobs.js',
     -- Panneau d'administration NUI (F10)
