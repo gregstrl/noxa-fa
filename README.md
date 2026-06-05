@@ -26,6 +26,20 @@
 
 > ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — Vérification QA finale de fin de journée (build vert) · 2026-06-05
 
+### Session QA — Téléphone : fil SMS tronqué sur les anciens messages (correctif)
+
+Passe QA ciblée téléphone (chaîne complète server↔client↔NUI auditée :
+contacts, SMS temps réel, Canari, banque, carte, réglages — toutes les
+fonctions `DB.*` et callbacks NUI présents, contrat respecté).
+
+- **`DB.getThread`** : la requête bornait le fil avec `ORDER BY id ASC LIMIT N`,
+  ce qui renvoyait les **N plus anciens** messages. Au-delà de `maxMessages`
+  (200) dans une même conversation, les messages **récents** étaient invisibles.
+  Corrigé via sous-requête `ORDER BY id DESC LIMIT N` (garde les derniers) puis
+  ré-ordonnancement `ASC` pour l'affichage chronologique des bulles. Aucun autre
+  changement (drogues, activités, carte/POI revérifiés : cohérence config ↔
+  items ↔ POI ↔ SQL intacte).
+
 ### Session QA — Vérification finale de fin de journée (zéro régression)
 
 Passe QA finale (dernier agent du jour, zéro nouvelle feature). Audit

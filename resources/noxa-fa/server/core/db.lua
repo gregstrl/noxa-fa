@@ -435,12 +435,17 @@ function DB.addMessage(fromNum, toNum, body)
         { fromNum, toNum, body })
 end
 
---- Fil de discussion entre deux numéros (ordre chronologique).
+--- Fil de discussion entre deux numéros (les N plus RÉCENTS, présentés en
+--- ordre chronologique). On limite d'abord par id DESC pour garder les
+--- derniers messages, puis on ré-ordonne ASC pour l'affichage des bulles —
+--- sinon une conversation de plus de N messages masquerait les plus récents.
 function DB.getThread(a, b, limit)
     return MySQL.query.await([[
-        SELECT from_num, to_num, body, created_at FROM noxa_phone_messages
-        WHERE (from_num = ? AND to_num = ?) OR (from_num = ? AND to_num = ?)
-        ORDER BY id ASC LIMIT ?
+        SELECT from_num, to_num, body, created_at FROM (
+            SELECT id, from_num, to_num, body, created_at FROM noxa_phone_messages
+            WHERE (from_num = ? AND to_num = ?) OR (from_num = ? AND to_num = ?)
+            ORDER BY id DESC LIMIT ?
+        ) t ORDER BY id ASC
     ]], { a, b, b, a, limit or 200 }) or {}
 end
 
