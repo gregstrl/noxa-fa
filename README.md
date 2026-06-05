@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — stable-2.3 · 2026-06-05
+## État actuel — stable-2.4 · 2026-06-05
 
 | Système | État | Notes |
 |---|---|---|
