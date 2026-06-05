@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — stable-2.12 · 2026-06-05
+## État actuel — stable-2.13 · 2026-06-05
 
 | Système | État | Notes |
 |---|---|---|
@@ -24,7 +24,29 @@
 | HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 | MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; **migration in-game terminée** — concession/garage/fourrière + menu patron jobs + immobilier (porte/mobilier/confirmation) + **boutique épicerie** + **atelier mécanicien `/atelier`**. NUI custom réservée à HUD/notifs/banque/téléphone/inventaire/panels (admin/staff/gestion/anti-cheat) |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — Vérification QA finale de fin de journée (build vert) · 2026-06-05
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — Correctifs BUGS.md (BUG-05/07/08/09), BUGS.md vidé · 2026-06-05
+
+### Session QA — Correctifs BUGS.md (stable-2.13)
+
+Passe de correction des bugs déclarés (BUGS.md vidé) :
+
+- **BUG-07 — Anti-cheat téléport, faux positif au spawn/chargement** : un saut
+  de position avec une **vélocité ~nulle** (sous `teleport.minSpeed`, 1 m/s) est
+  désormais ignoré. C'est la signature d'une téléportation **serveur légitime**
+  non interceptée (spawn, sélection de perso, chargement, entrée/sortie
+  d'intérieur), pas d'un warp gameplay (qui conserve une vélocité). Complète la
+  fenêtre de grâce déjà appliquée au `noxa:playerLoaded`.
+- **BUG-08 — Violation « noxa:prop:request avant chargement »** : le client ne
+  demande la liste des biens qu'après `noxa:char:selected` (perso chargé), et le
+  serveur répond à `noxa:prop:request` en **lecture seule sans compter de
+  violation** (`requireLoaded = false`, donnée publique). Plus de faux positif
+  anti-triche à la course au spawn.
+- **BUG-05 — menuv « yarn is currently busy » au 1er boot** : le `dist/` est déjà
+  compilé et commité ; le build auto FiveM (déclenché par la présence de
+  `package.json`) est neutralisé (`package.json`/`webpack.config.js`/`build.js`
+  désactivés). menuv démarre instantanément, sans relancer yarn/webpack.
+- **BUG-09 — Usage `setgroup`** : message d'usage **contextuel** (console RCON
+  sans `/`, en jeu avec `/`) + section README « Devenir superadmin ».
 
 ### Session QA — Téléphone : fil SMS tronqué sur les anciens messages (correctif)
 
