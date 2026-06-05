@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — stable-2.10 · 2026-06-05
+## État actuel — stable-2.11 · 2026-06-05
 
 | Système | État | Notes |
 |---|---|---|
@@ -24,7 +24,36 @@
 | HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 | MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; **migration in-game terminée** — concession/garage/fourrière + menu patron jobs + immobilier (porte/mobilier/confirmation) + **boutique épicerie** + **atelier mécanicien `/atelier`**. NUI custom réservée à HUD/notifs/banque/téléphone/inventaire/panels (admin/staff/gestion/anti-cheat) |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — QA durcissement inventaire (nil-deref donner item) · 2026-06-05
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — Vérification QA finale de fin de journée (build vert) · 2026-06-05
+
+### Session QA — Vérification finale de fin de journée (zéro régression)
+
+Passe QA finale (dernier agent du jour, zéro nouvelle feature). Audit
+intégral des 18 commits de la journée — **aucun bug introduit, aucune
+régression, build validé** :
+
+- **Syntaxe Lua** : 100 % des fichiers `.lua` (noxa-fa + shim es_extended)
+  passent `luac5.4 -p`. Les littéraux hash backtick `` `WEAPON_*` `` (config
+  anti-cheat) sont du CfxLua valide — faux positifs écartés.
+- **SQL** : toutes les tables `noxa_*` référencées côté serveur existent dans
+  `install.sql` ; `CREATE TABLE IF NOT EXISTS` + `ON DUPLICATE KEY UPDATE`
+  partout (réexécutable sans casse) ; les deux copies `install.sql` (racine +
+  `sql/`) sont identiques.
+- **fxmanifest** : chaque script et fichier NUI référencé existe sur disque.
+- **Crashs connexion** : le correctif « objet `ply` sérialisé » (shim ESX
+  `noxa:playerLoaded` → ré-acquisition de la référence vivante via
+  `exports['noxa-fa']:GetPlayer`) est vérifié — l'export cible existe bien.
+- **Focus NUI** : gestion centralisée par compteur de couches (`NUI.setFocus`),
+  garde anti ré-ouverture des designs F8/`/gestion` confirmée équilibrée
+  (pas de curseur bloqué).
+- **Argent** : `addMoney`/`removeMoney` sont atomiques en mémoire (lecture →
+  contrôle → écriture sans `yield`) — aucune fenêtre de race.
+- **nil-deref** : tous les accès `CFG.getItem(...).label` (inventaire, drogues,
+  activités) sont gardés `it and it.label or e.name`.
+- **Events réseau** : 100 % des handlers serveur passent par `S.onNet`
+  (rate-limit + joueur chargé + pcall) — aucun `RegisterNetEvent` nu.
+- **Callbacks NUI** : tous résolvent leur `cb()` (aucune promesse `fetchNui`
+  laissée en suspens).
 
 ### Session QA — Correctif crash potentiel sur don d'item (nil-deref)
 
