@@ -24,6 +24,7 @@ local lastGarage = nil   -- coords du dernier garage utilisé (point de spawn)
 local dealer      = { menu = nil, built = false }
 local garageMenu  = nil
 local garageOpen  = false
+local resaleMenu  = nil   -- menu de revente (contenu reconstruit à l'ouverture)
 
 -- ---------------------------------------------------------------------
 --  Application des modifications (depuis le JSON persisté)
@@ -121,6 +122,47 @@ RegisterNetEvent('noxa:veh:bought', function(data)
     end
 end)
 
+RegisterNetEvent('noxa:veh:sold', function(data)
+    -- Met à jour le solde affiché dans la concession après une revente.
+    if dealer.menu then
+        dealer.menu.Subtitle = ('Compte bancaire : %s'):format(money(data.bank or 0))
+    end
+end)
+
+-- ---------------------------------------------------------------------
+--  CONCESSION — revente : menu reconstruit à l'ouverture (valeurs serveur).
+-- ---------------------------------------------------------------------
+RegisterNetEvent('noxa:veh:resaleList', function(data)
+    if type(data) ~= 'table' then return end
+    if not resaleMenu then
+        resaleMenu = MenuV:CreateMenu('Revente', 'Véhicules remisés', 'topleft', 0, 150, 220,
+            'size-110', 'default', 'menuv', 'noxa_resale')
+    end
+
+    resaleMenu:ClearItems()
+    local n = 0
+    for _, v in ipairs(data.vehicles or {}) do
+        n = n + 1
+        local plate = v.plate
+        resaleMenu:AddButton({
+            icon        = '💰',
+            label       = ('%s [%s]'):format(v.label, plate),
+            description = ('Revendre pour %s (valeur selon l\'état)'):format(money(v.value)),
+            select      = function()
+                TriggerServerEvent('noxa:veh:sell', plate)
+                MenuV:CloseAll()
+            end,
+        })
+    end
+    if n == 0 then
+        resaleMenu:AddButton({ label = 'Aucun véhicule',
+            description = 'Aucun véhicule remisé à revendre.' })
+    end
+
+    resaleMenu.Subtitle = ('%d véhicule(s) remisé(s)'):format(n)
+    MenuV:OpenMenu(resaleMenu)
+end)
+
 -- ---------------------------------------------------------------------
 --  CONCESSION — construction & ouverture du menu (MenuV)
 -- ---------------------------------------------------------------------
@@ -153,6 +195,15 @@ RegisterNetEvent('noxa:veh:catalog', function(data)
                 value       = sub,
             })
         end
+
+        -- Revente : ouvre le menu des véhicules remisés (liste & valeurs
+        -- calculées serveur, donc demandées à l'ouverture — cf. garage).
+        dealer.menu:AddButton({
+            icon        = '💰',
+            label       = 'Revendre un véhicule',
+            description = 'Céder un véhicule remisé à la concession',
+            select      = function() TriggerServerEvent('noxa:veh:resaleList') end,
+        })
         dealer.built = true
     end
 

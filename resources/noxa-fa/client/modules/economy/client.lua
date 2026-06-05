@@ -20,6 +20,7 @@ local LABELS = {
     ['invoice:pay']= { label = 'Facture réglée',     cat = 'expense'  },
     ['shop']       = { label = 'Achat boutique',     cat = 'expense'  },
     ['fuel']       = { label = 'Carburant',          cat = 'expense'  },
+    ['vehicle']    = { label = 'Concession (véhicule)', cat = 'transfer' },
     ['fine']       = { label = 'Amende',             cat = 'fine'     },
     ['upkeep']     = { label = 'Charges (loyer/entretien)', cat = 'expense' },
     ['cashcap:auto'] = { label = 'Dépôt automatique', cat = 'transfer' },

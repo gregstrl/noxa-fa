@@ -333,6 +333,17 @@ function DB.saveVehicleStatus(plate, cid, fuel, engine, body, modsJson)
     ]], { fuel, engine, body, modsJson, plate, cid })
 end
 
+--- Suppression GARDÉE (revente concession) : ne supprime que si le véhicule est
+--- bien possédé ET dans l'état attendu (remisé). Atomique = anti double-revente
+--- et anti-course avec une sortie de garage concurrente.
+---@return boolean ok
+function DB.deleteOwnedVehicle(plate, cid, requireState)
+    local affected = MySQL.update.await(
+        'DELETE FROM noxa_vehicles WHERE plate = ? AND owner_cid = ? AND state = ?',
+        { plate, cid, requireState })
+    return (affected or 0) > 0
+end
+
 --- Au boot : remet en fourrière les véhicules restés « sortis » après un
 --- crash serveur, afin qu'ils soient récupérables (pas perdus dans le vide).
 function DB.impoundStrandedVehicles()

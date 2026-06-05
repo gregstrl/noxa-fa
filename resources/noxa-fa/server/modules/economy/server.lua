@@ -160,6 +160,26 @@ function Eco.vehicleTotal(spawn)
     return base + tax, base, tax
 end
 
+--- Valeur de REVENTE d'un véhicule (faucet borné, cf. doctrine Resale).
+--- = prix catalogue HT × taux de revente × état (moteur/carrosserie). Les taxes
+--- payées à l'achat ne sont JAMAIS remboursées : revendre est donc perdant
+--- (puits anti-spéculation). État absent => considéré neuf (modèle catalogue).
+---@param spawn string
+---@param engine? number santé moteur 0..1000
+---@param body? number santé carrosserie 0..1000
+---@return integer|nil value, integer|nil base
+function Eco.vehicleResale(spawn, engine, body)
+    local base = CFG.getVehiclePrice(spawn)
+    if not base then return nil end
+    local R = ECO.Resale
+    -- État moyen normalisé sur [0..1] (neuf par défaut si non renseigné).
+    local cond = ((tonumber(engine) or 1000) + (tonumber(body) or 1000)) / 2000
+    cond = math.max(0.0, math.min(1.0, cond))
+    -- Remappe l'état dans [minCondition..1] : même une épave garde un socle.
+    local factor = R.minCondition + (1.0 - R.minCondition) * cond
+    return math.floor(base * R.rate * factor), base
+end
+
 -- ---------------------------------------------------------------------
 --  PUITS #3 — Cycle d'entretien (loyers + maintenance véhicules).
 --  Débité aux propriétaires EN LIGNE, toutes les `Upkeep.interval`.
@@ -231,6 +251,7 @@ exports('ChargeWithTax',   Eco.chargeWithTax)
 exports('Fine',            Eco.fine)
 exports('GetVehiclePrice', Eco.vehiclePrice)
 exports('GetVehicleTotal', Eco.vehicleTotal)
+exports('GetVehicleResale', Eco.vehicleResale)
 
 -- Note : la paie automatique des salaires est gérée par le module Emplois
 -- (server/modules/jobs/server.lua), prélevée sur les caisses société. Le

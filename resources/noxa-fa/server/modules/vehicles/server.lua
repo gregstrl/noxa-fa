@@ -102,6 +102,57 @@ S.onNet('noxa:veh:buy', function(src, ply, spawn)
 end)
 
 -- ---------------------------------------------------------------------
+--  CONCESSION — revente (FAUCET borné, cf. doctrine economy/vehicles.lua)
+--  Seuls les véhicules REMISÉS sont revendables (pas un véhicule sorti ou en
+--  fourrière). La valeur est calculée serveur depuis le catalogue + l'état.
+-- ---------------------------------------------------------------------
+S.onNet('noxa:veh:resaleList', function(src, ply)
+    local list = {}
+    for _, v in ipairs(DB.getOwnedVehicles(ply.citizenid)) do
+        if v.state == 'stored' then
+            local value = Noxa.Economy.vehicleResale(v.model, v.engine, v.body)
+            if value then
+                local cv = CFG.VehicleIndex[v.model]
+                list[#list + 1] = {
+                    plate = v.plate, model = v.model,
+                    label = cv and cv.label or v.model, value = value,
+                }
+            end
+        end
+    end
+    TriggerClientEvent('noxa:veh:resaleList', src, { vehicles = list })
+end)
+
+S.onNet('noxa:veh:sell', function(src, ply, plate)
+    plate = tostring(plate or '')
+    local row = DB.getOwnedVehicleByPlate(plate, ply.citizenid)
+    if not row then return S.flag(src, ('veh:sell non possédé: %s'):format(plate)) end
+    if row.state ~= 'stored' then
+        return TriggerClientEvent('noxa:notify', src,
+            'Seul un véhicule remisé peut être revendu.', 'error')
+    end
+    local value = Noxa.Economy.vehicleResale(row.model, row.engine, row.body)
+    if not value then
+        return TriggerClientEvent('noxa:notify', src,
+            'Ce modèle ne peut pas être revendu ici.', 'error')
+    end
+    -- Suppression GARDÉE (remisé + possédé) AVANT crédit : si elle échoue
+    -- (déjà vendu / sorti entre-temps), aucun argent n'est créé.
+    if not DB.deleteOwnedVehicle(plate, ply.citizenid, 'stored') then
+        return TriggerClientEvent('noxa:notify', src,
+            'Revente impossible (véhicule indisponible).', 'error')
+    end
+    ply:addMoney(E.Accounts.BANK, value, ('vehicle:sell:%s'):format(row.model))
+    DB.log('vehicle', 'info', ply.license,
+        ('Revente %s (%s) pour %s'):format(row.model, plate, U.money(value)),
+        { value = value, cid = ply.citizenid })
+    TriggerClientEvent('noxa:notify', src,
+        ('Véhicule revendu (%s) : %s versés sur votre compte.'):format(plate, U.money(value)),
+        'success')
+    TriggerClientEvent('noxa:veh:sold', src, { plate = plate, bank = ply.bank })
+end)
+
+-- ---------------------------------------------------------------------
 --  GARAGE — lister / sortir / remiser
 -- ---------------------------------------------------------------------
 S.onNet('noxa:veh:garage', function(src, ply, garage)

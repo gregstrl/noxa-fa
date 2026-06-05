@@ -96,6 +96,20 @@ C.Vehicles = {
     { spawn = 'tyrant',   label = 'Overflod Tyrant',   class = 'S', price = 8000000 },
 }
 
+-- ---------------------------------------------------------------------
+--  REVENTE (concession) — FAUCET borné, pensé anti-spéculation.
+--  Revendre un véhicule réinjecte de l'argent dans la masse monétaire : on
+--  ne récupère donc qu'une FRACTION du prix catalogue HT, jamais les taxes
+--  d'achat (TVA luxe « brûlée »). Acheter puis revendre est structurellement
+--  PERDANT (≥ 50 % + surtaxe luxe), ce qui tue le flip et garde le faucet
+--  sous contrôle. L'état du véhicule module encore la valeur (une épave vaut
+--  moins), sans jamais tomber à zéro (socle `minCondition`).
+-- ---------------------------------------------------------------------
+C.Economy.Resale = {
+    rate         = 0.50,  -- 50 % du prix catalogue HT : revendre = perte sèche assumée.
+    minCondition = 0.60,  -- plancher d'état : une épave conserve 60 % de la valeur de revente.
+}
+
 -- Index spawn -> entrée (résolution O(1) côté serveur).
 C.VehicleIndex = {}
 for _, v in ipairs(C.Vehicles) do

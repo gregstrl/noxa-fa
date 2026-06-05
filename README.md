@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — beta-1.9 · 2026-06-04
+## État actuel — beta-2.0 · 2026-06-05
 
 | Système | État | Notes |
 |---|---|---|
@@ -9,8 +9,8 @@
 | Spawn & Connexion | ✅ | Deferral (vérif ban), spawn robuste anti-gel (dégel garanti tout chemin) |
 | Création personnage NUI | ✅ | Caméra 3/4, head-blend, traits, overlays, vêtements — édition live + persistance |
 | Inventaire / Items | ✅ | Grille NUI drag&drop, hotbar 1-5, poids, use/jeter/donner — autorité serveur anti-dupe (source unique `noxa_characters.inventory`), 11 items |
-| Économie & Prix | ✅ | Doctrine salaires (bandes/h justifiées), TVA, taxe virement, loyers, entretien, amendes, plafond cash, catalogue véhicules |
-| Véhicules (concessions, garages) | ✅ | **Menus MenuV** : concession F→S, garage sortir/remiser, fourrière (amende), persistance état (carburant/santé/mods) ; tuning 🟡 |
+| Économie & Prix | ✅ | Doctrine salaires (bandes/h justifiées), TVA, taxe virement, loyers, entretien, amendes, plafond cash, catalogue véhicules ; **revente concession** = faucet borné (50 % du prix HT × état, anti-spéculation) |
+| Véhicules (concessions, garages) | ✅ | **Menus MenuV** : concession F→S, **revente des véhicules remisés** (valeur selon l'état), garage sortir/remiser, fourrière (amende), persistance état (carburant/santé/mods) ; tuning 🟡 |
 | Menu Admin (F10) | ✅ | Panneau NUI 9 sections (joueurs, véhicules, TP, éco, jobs, sanctions, annonces, logs, serveur) — **rang revérifié serveur + log par action** |
 | Panel Gestion Serveur (F9) | ✅ | **Superadmin 8 onglets** : config live SANS restart — systèmes on/off, météo/heure, économie, boutiques, coordonnées (spawn/POI), jobs+grades, organisations, messages planifiés, whitelist. Mémoire + BDD + broadcast clients |
 | Anti-Cheat & Panel Staff (F3) | ✅ | **Détection server-side** (speed/teleport/godmode/armes/spawn/argent) + échelle alerte→freeze→kick→ban auto · panel staff NUI temps réel, spectate, screenshot, freeze, TP, kick/ban, alertes live + `noxa_anticheat_logs` |
@@ -23,7 +23,28 @@
 | HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 | MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; concession/garage/fourrière migrés |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 04h — MenuV déployable & véhicules migrés · 2026-06-04
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 00h — Revente de véhicules (faucet économique borné) · 2026-06-05
+
+### Session 00h — Économie : revente de véhicules à la concession
+
+**Boucle économique fermée côté véhicules.** On pouvait acheter à la concession (sink :
+prix + surtaxe luxe 7 % au Trésor) mais jamais revendre : l'argent immobilisé dans un
+véhicule était définitivement « gelé ». Ajout d'un **faucet de revente borné**, pensé pour
+ne PAS nourrir l'inflation :
+- **Doctrine** (`shared/economy/vehicles.lua` → `C.Economy.Resale`) : revente = **50 % du
+  prix catalogue HT**, modulé par l'**état** (moteur + carrosserie) avec un plancher de 60 %.
+  Les taxes d'achat ne sont jamais remboursées ⇒ acheter puis revendre est **structurellement
+  perdant** (≥ 50 % + surtaxe), ce qui tue le flip et garde le faucet sous contrôle.
+- **Calcul serveur** (`Eco.vehicleResale`, exporté `GetVehicleResale`) : autoritaire, lit le
+  prix catalogue + l'état BDD du véhicule. Le client n'envoie jamais de valeur.
+- **Anti-dupe** : `DB.deleteOwnedVehicle` est une **suppression GARDÉE** (`DELETE … WHERE
+  plate = ? AND owner_cid = ? AND state = 'stored'`) exécutée **avant** le crédit — une
+  course (sortie de garage / double-revente concurrente) annule la vente sans créer d'argent.
+- **Règle métier** : seuls les véhicules **remisés** sont revendables (ni sortis, ni en
+  fourrière).
+- **UI MenuV** : nouveau bouton *« Revendre un véhicule »* à la concession → menu listant les
+  remisés avec leur valeur calculée serveur (reconstruit à l'ouverture = état vivant).
+- **Flux monétaire** : nouveau libellé toast *Concession (véhicule)* côté HUD économique.
 
 ### Session 04h — MenuV opérationnel & menus véhicules migrés
 
