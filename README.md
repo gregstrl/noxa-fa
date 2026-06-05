@@ -737,6 +737,11 @@ noxa-fa/
 - Commandes : `/kick` `/ban` `/unban` `/heal` `/revive` `/goto` `/bring` `/announce`
   `/setmoney` `/job` `/setjobwl` `/setgroup`
 
+> **Devenir superadmin (premier staff)** — depuis la **console RCON / txAdmin**, la
+> commande s'écrit **SANS slash** : `setgroup <id> superadmin` (ex. `setgroup 1 superadmin`).
+> En **jeu**, un superadmin existant l'utilise **AVEC slash** : `/setgroup <id> superadmin`.
+> Taper `/setgroup` dans la console renvoie « No such command » : c'est normal, retirez le `/`.
+
 ## Historique — durcissement sécurité (stable-2.5)
 
 - **Cooldown sensible (anti rapid-fire)** : nouvel helper `Security.cooldown(src, key, ms)`

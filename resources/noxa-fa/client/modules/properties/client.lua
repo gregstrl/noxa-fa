@@ -256,15 +256,17 @@ end
 
 RegisterCommand('meubles', openFurnitureMenu, false)
 
--- Demande la liste des biens une fois le personnage chargé.
-AddEventHandler('noxa:client:playerDataUpdated', function()
-    if next(properties) == nil then TriggerServerEvent('noxa:prop:request') end
+-- BUG-08 : ne JAMAIS demander la liste avant que le perso soit chargé serveur
+-- (sinon le serveur compte une violation « noxa:prop:request avant chargement »).
+-- L'unique déclencheur fiable est noxa:char:selected (perso chargé + spawné).
+RegisterNetEvent('noxa:char:selected', function()
+    TriggerServerEvent('noxa:prop:request')
 end)
 
-CreateThread(function()
-    while not NetworkIsSessionStarted() do Wait(200) end
-    Wait(2000)
-    TriggerServerEvent('noxa:prop:request')
+-- Filet de sécurité : si les données joueur sont rafraîchies et qu'on n'a
+-- toujours pas la liste (ex. reconnexion à chaud), on la redemande.
+AddEventHandler('noxa:client:playerDataUpdated', function()
+    if next(properties) == nil then TriggerServerEvent('noxa:prop:request') end
 end)
 
 AddEventHandler('onResourceStop', function(res)

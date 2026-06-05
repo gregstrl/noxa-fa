@@ -167,6 +167,7 @@ C.AntiCheat = {
         minJump   = 80.0,        -- en-deçà : jamais flaggé (déplacements normaux)
         tolerance = 1.8,         -- marge : distance ≤ vélocité×Δt×tolérance + base
         base      = 25.0,        -- distance « gratuite » par scan (latence, courbes)
+        minSpeed  = 1.0,         -- BUG-07 : sous ce seuil (m/s) le ped est immobile -> spawn/chargement/entrée d'intérieur, JAMAIS un warp gameplay
         severity  = 'medium',
     },
     -- God mode : santé / armure hors bornes légitimes (max health joueur = 200).

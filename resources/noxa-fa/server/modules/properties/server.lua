@@ -80,9 +80,12 @@ local function broadcastList()
 end
 
 -- Envoi initial (le client redemande après chargement complet du perso).
+-- BUG-08 : la liste des biens est une donnée PUBLIQUE en lecture seule. Si la
+-- requête arrive avant le chargement complet (course au spawn), on répond
+-- poliment SANS compter de violation anti-triche (requireLoaded = false).
 S.onNet('noxa:prop:request', function(src)
     TriggerClientEvent('noxa:prop:list', src, buildClientList())
-end)
+end, { requireLoaded = false })
 
 -- ---------------------------------------------------------------------
 --  Achat (atomique + paiement bancaire borné)

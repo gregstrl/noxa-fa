@@ -325,7 +325,11 @@ local function scanPlayer(src, now)
     -- Distance parcourue depuis le dernier scan vs distance plausible
     -- (vélocité × Δt). Un saut bien supérieur à la vitesse réelle = blink.
     local graced = now < st.graceUntil
-    if st.lastPos and not graced then
+    -- BUG-07 : un saut avec une vélocité ~nulle (sous minSpeed) est la signature
+    -- d'une téléportation SERVEUR légitime non interceptée (spawn, sélection de
+    -- perso, chargement, entrée/sortie d'intérieur côté client) — pas d'un warp
+    -- gameplay (qui conserve une vélocité). On ne le compte jamais comme triche.
+    if st.lastPos and not graced and speed >= CFG.teleport.minSpeed then
         local dt = (now - st.lastScan) / 1000.0
         if dt > 0 then
             local dist = #(coords - st.lastPos)

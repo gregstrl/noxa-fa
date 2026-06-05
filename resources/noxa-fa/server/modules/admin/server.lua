@@ -113,12 +113,16 @@ staffCommand('setjobwl', 'admin', function(src, args)
     feedback(src, ('Whitelist %s -> %s g%d'):format(target:getName(), job, maxGrade), 'success')
 end)
 
--- /setgroup [id] [rang]  (gestion des rangs staff — superadmin uniquement)
+-- setgroup [id] [rang]  (gestion des rangs staff — superadmin uniquement)
+-- BUG-09 : en console RCON/txAdmin la commande s'écrit SANS slash
+-- (`setgroup 1 superadmin`) ; en jeu elle s'écrit AVEC slash (`/setgroup ...`).
+-- Le message d'usage s'adapte donc au contexte (console = src 0).
 staffCommand('setgroup', 'superadmin', function(src, args)
+    local prefix = (src == 0) and '' or '/'
     local target = Noxa.Players.get(tonumber(args[1]))
     local rank = args[2]
     if not target or not E.StaffRanks[rank] then
-        return feedback(src, 'Usage: /setgroup [id] [user|helper|mod|admin|superadmin]', 'error')
+        return feedback(src, ('Usage: %ssetgroup [id] [user|helper|mod|admin|superadmin]'):format(prefix), 'error')
     end
     target.staffRank = rank
     MySQL.update('UPDATE noxa_accounts SET staff_rank = ? WHERE id = ?', { rank, target.accountId })
