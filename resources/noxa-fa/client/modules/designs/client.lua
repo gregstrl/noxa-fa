@@ -15,6 +15,14 @@ local NUI = Noxa.NUI
 -- ---------------------------------------------------------------------
 
 local function openDesign(panel, payload)
+    -- Garde anti ré-ouverture : si le serveur ré-accorde l'ouverture alors que
+    -- le panneau est déjà actif (F8 / commande pressée 2x), on se contente de
+    -- rafraîchir les données. Sans cette garde, NUI.setFocus(true) serait appelé
+    -- une 2e fois sans relâche → compteur de focus déséquilibré, curseur bloqué.
+    if NUI.activePanel == panel then
+        NUI.send(panel, 'open', { data = payload or {} })
+        return
+    end
     NUI.openPanel(panel)        -- ferme proprement un autre panneau plein
     NUI.setFocus(true)
     NUI.send(panel, 'open', { data = payload or {} })

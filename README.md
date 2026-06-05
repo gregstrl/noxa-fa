@@ -24,7 +24,45 @@
 | HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 | MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; **migration in-game terminée** — concession/garage/fourrière + menu patron jobs + immobilier (porte/mobilier/confirmation). NUI custom réservée à HUD/notifs/banque/téléphone/inventaire/panels |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — Téléphone refonte iOS premium (Option C) · 2026-06-05
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — QA finale (fuite de focus designs) · 2026-06-05
+
+### Session QA finale — Audit de fin de journée (bugfix + hotfix)
+
+Passe **QA & hotfix, zéro nouvelle feature**. Revue des commits du jour (téléphone
+iOS, branchement des designs autonomes, cooldown anti rapid-fire, loyers
+immobiliers). **Un bug corrigé**, le reste validé sain.
+
+- **🟠 Fuite de focus NUI sur ré-ouverture d'un design (Anti-Cheat F8 / Gestion
+  `/gestion`).** `client/modules/designs/client.lua` — `openDesign()` appelait
+  `NUI.setFocus(true)` à **chaque** octroi serveur. Comme l'anti-superposition
+  ne ferme **pas** un panneau déjà actif (`prev == name`), une 2ᵉ pression F8
+  (ou `/gestion`) **ré-incrémentait** le compteur de focus sans le relâcher →
+  **curseur bloqué** après fermeture (même classe de bug que l'ancienne fuite de
+  la banque). **Fix** : garde anti ré-ouverture — si le panneau est déjà actif,
+  on se contente de **rafraîchir les données** sans ré-acquérir le focus,
+  alignée sur le pattern `isOpen` de la banque et du téléphone.
+
+**Vérifications QA (aucun nouveau bug introduit) :**
+- **Syntaxe Lua** : `luac5.4 -p` OK sur les **105 fichiers** `noxa-fa` (les
+  littéraux hash backtick `` `WEAPON_*` `` de FiveM, faux positifs en Lua vanilla,
+  sont valides côté CfxLua).
+- **Intégrité SQL** : 0 table référencée en code absente de `install.sql` ; les
+  deux `install.sql` (racine + `resources/noxa-fa/sql/`) restent **identiques** ;
+  les **18** `CREATE TABLE` sont **idempotents** (`IF NOT EXISTS`).
+- **fxmanifest** : tous les fichiers référencés existent sur disque ; seuls
+  `@menuv/menuv.lua` et `@oxmysql/lib/MySQL.lua` sont des dépendances
+  **inter-ressources** (présentes : `resources/menuv`, `resources/[ox]/oxmysql`).
+- **Compat ESX** : shim `es_extended` complet et **nil-safe** (`getSharedObject`
+  export + event legacy, `GetPlayerFromId` retourne `nil` hors chargement,
+  xPlayer money/job/inventaire, callbacks, events `esx:*` relayés).
+- **Atomicité argent** : tous les flux (banque, achat/revente véhicule, amendes,
+  loyers, drogues) sont **synchrones** (aucun yield entre vérif solde et
+  mutation) ou en **saga débit-avant-écriture + rollback** (achat véhicule).
+- **Cooldown anti rapid-fire** : les **16** sites appliquent bien
+  `if not S.cooldown(...) then return end` ; dépassement **souple** (ignoré +
+  notifié), jamais compté comme violation.
+- **Téléphone** : contrat d'events Lua↔NUI **complet** (client⇄serveur 7/7
+  triggers, 6/6 + `smsThread`/`threadData` round-trip) — aucune app morte.
 
 ### Session — Téléphone : refonte visuelle « iOS premium » (Option C)
 - **Réécriture** de `nui/phone/phone.css` + `nui/phone/phone.js` pour adopter le langage visuel du bundle React de référence (`nui/phone/index.html`, Claude Design) — laissé intact comme référence.
