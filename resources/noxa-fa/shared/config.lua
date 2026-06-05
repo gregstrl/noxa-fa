@@ -513,11 +513,19 @@ C.Fuel = {
 --  IMMOBILIER — paliers, prix & biens (coords pilotées config, état en BDD)
 --  Le serveur seed `noxa_properties` depuis cette table au démarrage.
 -- =====================================================================
+--  rent : loyer d'entretien prélevé en banque à chaque cycle fiscal (≈1 % du
+--  prix). Puits monétaire justifié : possession = charge récurrente.
 C.PropertyTiers = {
-    studio    = { label = 'Studio',      price = 50000 },
-    apartment = { label = 'Appartement', price = 150000 },
-    house     = { label = 'Maison',      price = 400000 },
-    villa     = { label = 'Villa',       price = 1200000 },
+    studio    = { label = 'Studio',      price = 50000,   rent = 500 },
+    apartment = { label = 'Appartement', price = 150000,  rent = 1500 },
+    house     = { label = 'Maison',      price = 400000,  rent = 4000 },
+    villa     = { label = 'Villa',       price = 1200000, rent = 12000 },
+}
+
+-- Cycle fiscal des loyers (puits monétaire). Prélèvement en banque des
+-- propriétaires connectés, désactivable à chaud via C.Systems.propertyRent.
+C.PropertyRent = {
+    interval = 60 * 60 * 1000, -- 1 cycle fiscal = 1 heure réelle
 }
 
 -- Catalogue de mobilier plaçable à l'intérieur (modèle prop + libellé).
@@ -568,6 +576,7 @@ C.Systems = {
     weatherAuto   = true,    -- rotation météo automatique (sinon météo figée)
     forcedWeather = false,   -- type météo imposé quand weatherAuto = false (ex 'RAIN')
     payroll       = true,    -- versement automatique des salaires
+    propertyRent  = true,    -- prélèvement des loyers immobiliers (cycle fiscal)
     economyTax    = true,    -- prélèvement des taxes/puits monétaires
     scheduledMsg  = true,    -- diffusion des messages serveur planifiés
 }

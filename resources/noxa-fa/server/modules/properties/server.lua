@@ -196,6 +196,66 @@ S.onNet('noxa:prop:furniture:save', function(src, ply, propId, furniture)
 end)
 
 -- ---------------------------------------------------------------------
+--  Loyers — cycle fiscal (puits monétaire)
+--  À chaque cycle, chaque propriétaire CONNECTÉ est prélevé en banque du
+--  loyer cumulé de ses biens (somme des tier.rent). Bascule live via
+--  C.Systems.propertyRent (désactivable sans restart). Loyer impayé : le
+--  bien est verrouillé et le joueur averti — aucune saisie (non destructif).
+-- ---------------------------------------------------------------------
+CreateThread(function()
+    local interval = (CFG.PropertyRent and CFG.PropertyRent.interval) or (60 * 60 * 1000)
+    while true do
+        Wait(interval)
+        if CFG.Systems and CFG.Systems.propertyRent == false then goto skip end
+
+        -- Index citizenid -> joueur connecté (un seul passage).
+        local online = {}
+        for _, ply in pairs(Noxa.Players.getAll()) do
+            online[ply.citizenid] = ply
+        end
+
+        -- Cumul du loyer dû par propriétaire connecté.
+        local due = {}      -- [cid] = montant
+        for _, p in pairs(cache) do
+            local ply = p.owner_cid and online[p.owner_cid]
+            if ply then
+                local tier = CFG.PropertyTiers[p.tier]
+                local rent = tier and tonumber(tier.rent) or 0
+                if rent > 0 then due[p.owner_cid] = (due[p.owner_cid] or 0) + rent end
+            end
+        end
+
+        local charged, unpaid = 0, 0
+        for cid, amount in pairs(due) do
+            local ply = online[cid]
+            if ply:getMoney(E.Accounts.BANK) >= amount
+               and ply:removeMoney(E.Accounts.BANK, amount, 'property:rent') then
+                charged = charged + 1
+                TriggerClientEvent('noxa:notify', ply.source,
+                    ('Loyer prélevé : %s'):format(U.money(amount)), 'inform')
+            else
+                unpaid = unpaid + 1
+                -- Verrouille les biens du mauvais payeur (sécurité), notifie.
+                for _, p in pairs(cache) do
+                    if p.owner_cid == cid and not p.locked then
+                        p.locked = true
+                        DB.setPropertyLocked(p.id, true)
+                    end
+                end
+                TriggerClientEvent('noxa:notify', ply.source,
+                    ('Loyer impayé (%s) : solde bancaire insuffisant.'):format(U.money(amount)), 'error')
+            end
+        end
+
+        if charged > 0 or unpaid > 0 then
+            broadcastList()
+            U.print('info', 'Loyers : %d prélevé(s), %d impayé(s).', charged, unpaid)
+        end
+        ::skip::
+    end
+end)
+
+-- ---------------------------------------------------------------------
 --  Démarrage
 -- ---------------------------------------------------------------------
 CreateThread(function()

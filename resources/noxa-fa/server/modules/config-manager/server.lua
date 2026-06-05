@@ -278,7 +278,7 @@ end
 
 -- --- Bascules systèmes (pvp, météo auto, paie, taxes...) -----------------
 local systemKeys = { pvp = true, weatherAuto = true, payroll = true,
-                     economyTax = true, scheduledMsg = true }
+                     propertyRent = true, economyTax = true, scheduledMsg = true }
 
 actions.toggleSystem = function(src, ply, p)
     if not systemKeys[p.key] then return feedback(src, 'Système inconnu.', 'error') end

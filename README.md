@@ -20,11 +20,40 @@
 | Téléphone | 🟡 | Contacts, SMS temps réel, Twitter, Banque, Carte, Réglages ; appels à venir (NUI custom) |
 | Jobs Police/EMS/Méca | ✅ | Police (menottes/fouille/amende/prison/MDT), EMS (ranimer/soigner + état inconscient), Méca (réparer + atelier) — portée & rôle revérifiés serveur · **menu patron `/boss` migré MenuV** (saisies numériques ID/grade/montant restent en dialogue NUI) |
 | Météo & Heure | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
-| Immobilier (maisons/apparts) | ✅ | Achat (confirmation MenuV), entrée/sortie, verrou, mobilier — **menus de porte & mobilier migrés MenuV** — 4 paliers, persistance BDD |
+| Immobilier (maisons/apparts) | ✅ | Achat (confirmation MenuV), entrée/sortie, verrou, mobilier — **menus de porte & mobilier migrés MenuV** — 4 paliers, persistance BDD, **loyers cycle fiscal** (puits monétaire, bascule live F9, impayé→verrou) |
 | HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 | MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; **migration in-game terminée** — concession/garage/fourrière + menu patron jobs + immobilier (porte/mobilier/confirmation). NUI custom réservée à HUD/notifs/banque/téléphone/inventaire/panels |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 05h — Migration MenuV terminée (jobs + immobilier) · 2026-06-05
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 17h — Loyers immobiliers (cycle fiscal) · 2026-06-05
+
+### Session 17h — Loyers immobiliers (cycle fiscal)
+
+Branchement du **loyer d'entretien** des biens, jusqu'ici documenté mais **non
+implémenté** (seul le helper BDD `DB.getOwnedPropertyTiers`, commenté *« cycle
+d'entretien : loyers »*, existait — aucun appelant). Le puits monétaire est
+désormais réel et cohérent avec le pattern de la paie automatique.
+
+**Config** (`shared/config.lua`)
+- `C.PropertyTiers[*].rent` : loyer/cycle par palier (≈ 1 % du prix) —
+  studio 500 · appartement 1 500 · maison 4 000 · villa 12 000.
+- `C.PropertyRent.interval` : 1 cycle fiscal = 1 h réelle.
+- `C.Systems.propertyRent` : bascule live (désactivable sans restart).
+
+**Serveur** (`server/modules/properties/server.lua`)
+- Thread fiscal : à chaque cycle, index `citizenid → joueur connecté`, cumul du
+  loyer dû par propriétaire (somme des `tier.rent` de ses biens en cache), puis
+  prélèvement **bancaire** unique via `removeMoney('property:rent')`.
+- **Impayé** (solde insuffisant) : verrouillage des biens du joueur (`setPropertyLocked`)
+  + notification — **non destructif** (aucune saisie). `broadcastList()` au besoin.
+- Seuls les **propriétaires connectés** sont prélevés (aligné sur la paie ; aucun
+  écrit BDD sur balances hors-ligne).
+
+**Panel gestion serveur** (`server/modules/config-manager/server.lua`)
+- `propertyRent` ajouté à la liste blanche `systemKeys` → toggle pilotable en F9.
+
+**Vérifs** : idiome `goto skip` en fin de bloc identique à `jobs/server.lua`
+(légal Lua 5.4), intégrité SQL inchangée (`comm` table↔install vide), aucune
+nouvelle table.
 
 ### Session 05h — Migration MenuV terminée (jobs + immobilier)
 
