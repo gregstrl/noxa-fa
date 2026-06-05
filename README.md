@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — stable-2.6 · 2026-06-05
+## État actuel — stable-2.7 · 2026-06-05
 
 | Système | État | Notes |
 |---|---|---|
@@ -17,14 +17,19 @@
 | Carte · Blips · POI | ✅ | 21 catégories de POI (banque, ATM, services, concession + **champs/labos/revendeurs drogue**, pêche, chasse), blips configurables, zones de proximité + prompt NUI overlay pur |
 | Drogues & Trafic | ✅ | **Chaîne récolte → transformation → vente** (cannabis/cocaïne/méth) via **MenuV** aux POI · 100 % autoritaire serveur (proximité revérifiée, cooldown, possession réelle) · alerte **dispatch police** probabiliste (blip GPS) · butin dans l'inventaire anti-dupe |
 | Activités légales | ✅ | **Pêche & chasse** via **MenuV** : achat d'outil, cueillette chronométrée (anim), butin probabiliste borné, **vente sur place** — proximité/outil/cooldown serveur |
-| Téléphone | 🟡 | Contacts, SMS temps réel, Twitter, Banque, Carte, Réglages ; appels à venir (NUI custom) |
+| Téléphone | 🟡 | **Refonte visuelle « iOS premium » (Option C)** : dynamic island, dock translucide, grille d'apps, bulles SMS, carte de solde dégradée — calquée sur le design de référence Claude Design, **100 % vraies données FiveM** (Contacts, SMS temps réel, Canari, Banque, Carte, Réglages) ; appels à venir |
 | Jobs Police/EMS/Méca | ✅ | Police (menottes/fouille/amende/prison/MDT), EMS (ranimer/soigner + état inconscient), Méca (réparer + atelier) — portée & rôle revérifiés serveur · **menu patron `/boss` migré MenuV** (saisies numériques ID/grade/montant restent en dialogue NUI) |
 | Météo & Heure | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
 | Immobilier (maisons/apparts) | ✅ | Achat (confirmation MenuV), entrée/sortie, verrou, mobilier — **menus de porte & mobilier migrés MenuV** — 4 paliers, persistance BDD, **loyers cycle fiscal** (puits monétaire, bascule live F9, impayé→verrou) |
 | HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 | MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; **migration in-game terminée** — concession/garage/fourrière + menu patron jobs + immobilier (porte/mobilier/confirmation). NUI custom réservée à HUD/notifs/banque/téléphone/inventaire/panels |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — Branchement designs Anti-Cheat (F8) & Gestion serveur (/gestion) · 2026-06-05
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — Téléphone refonte iOS premium (Option C) · 2026-06-05
+
+### Session — Téléphone : refonte visuelle « iOS premium » (Option C)
+- **Réécriture** de `nui/phone/phone.css` + `nui/phone/phone.js` pour adopter le langage visuel du bundle React de référence (`nui/phone/index.html`, Claude Design) — laissé intact comme référence.
+- Style : châssis acier sombre, **dynamic island**, barre d'état (signal/batterie), **grille d'apps iOS** (icônes arrondies dégradées + glyphes SVG), **dock translucide** (blur), cartes/listes, **bulles SMS** accent par app, **carte de solde** dégradée, bouton power latéral + geste home.
+- **Données live conservées** : contrat de messages Lua→NUI (`open/close/bootstrap/sync/contacts/smsThread/smsIncoming/smsSent/tweets/tweetNew`) et callbacks (`phoneClose/ContactAdd/Delete/SmsSend/SmsThread/TweetPost/TweetsList/BankTransfer`) **inchangés** — aucune donnée mockée. F1 ouvre/ferme, Échap ferme.
 
 ### Session — Branchement des designs autonomes (Anti-Cheat F8 · Gestion serveur /gestion)
 
