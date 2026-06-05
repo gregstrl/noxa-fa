@@ -383,6 +383,15 @@ end)
 AddEventHandler('entityCreating', function(handle)
     local src = source
     if not src or src == 0 or AC.isExempt(src) then return end
+    -- BUG-01 : ne compter QUE les entités réellement spawnées par un script/joueur.
+    -- Les PNJ et véhicules ambiants/garés du monde natif prennent comme owner
+    -- réseau le joueur qui les streame ; sans ce filtre ils étaient comptés comme
+    -- des "spawns joueur" et déclenchaient une boucle de faux positifs (entité ??).
+    -- ePopulationType : 6=permanent script, 7=mission, 10=tool -> créées par script.
+    --                   1..5 = aléatoire/ambiant (monde natif) -> ignoré.
+    -- nil (native indisponible) -> on laisse passer, le seuil glissant fait foi.
+    local pop = GetEntityPopulationType(handle)
+    if pop and pop ~= 6 and pop ~= 7 and pop ~= 10 then return end
     local st = getState(src)
     local now = GetGameTimer()
     local win = {}

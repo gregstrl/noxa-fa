@@ -375,7 +375,12 @@ local function clientSnapshot(ply, xPlayer)
     }
 end
 
-AddEventHandler('noxa:playerLoaded', function(src, ply)
+AddEventHandler('noxa:playerLoaded', function(src)
+    -- L'objet `ply` transporté par l'event est sérialisé : il a perdu ses
+    -- méthodes (getName, getMoney, ...). On récupère la référence vivante via
+    -- l'export noxa-fa (même mécanisme que ESX.GetPlayerFromId), méthodes intactes.
+    local ply = noxa(src)
+    if not ply then return end
     local xPlayer = buildXPlayer(ply)
     -- Serveur : signature ESX (playerId, xPlayer, isNew)
     TriggerEvent('esx:playerLoaded', src, xPlayer, false)

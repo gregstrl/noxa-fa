@@ -269,7 +269,13 @@ end
 -- ---------------------------------------------------------------------
 --  Seed de départ + synchro au chargement du personnage
 -- ---------------------------------------------------------------------
-AddEventHandler('noxa:playerLoaded', function(src, ply)
+AddEventHandler('noxa:playerLoaded', function(src)
+    -- IMPORTANT : on RE-RÉCUPÈRE l'objet vivant depuis le registre. L'argument
+    -- `ply` passé par TriggerEvent est sérialisé (msgpack) : ses champs survivent
+    -- mais sa métatable — donc ses méthodes (addItem, ...) — est perdue. On lit
+    -- la référence Lua réelle (même VM, aucune sérialisation), méthodes intactes.
+    local ply = Noxa.Players.get(src)
+    if not ply then return end
     -- Dotation unique au premier chargement (flag en metadata, persisté).
     if not ply.metadata.starterKit then
         ply:addItem('phone', 1)

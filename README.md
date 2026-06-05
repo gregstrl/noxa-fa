@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — stable-2.1 · 2026-06-05
+## État actuel — stable-2.2 · 2026-06-05
 
 | Système | État | Notes |
 |---|---|---|
@@ -24,7 +24,56 @@
 | HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 | MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; concession/garage/fourrière migrés |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 20h — Drogues & Trafic · Activités (pêche/chasse) · 2026-06-05
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session QA — correctifs crash connexion & anti-cheat · 2026-06-05
+
+### Session QA — Correctifs de stabilité (crashs connexion + faux positifs AC)
+
+Passe **QA & optimisation, zéro nouvelle feature**. Quatre bugs corrigés dont
+**trois 🔴 critiques** qui bloquaient la connexion ou polluaient l'anti-cheat.
+
+**Cause racine commune (BUG-02 & BUG-03) — sérialisation des events FiveM.**
+`TriggerEvent('noxa:playerLoaded', src, ply)` fait transiter l'objet `Player`
+par **msgpack** : ses *champs* survivent (`metadata`, `cash`…) mais sa
+**métatable est perdue**, donc toutes ses **méthodes** (`getName`, `addItem`…)
+deviennent `nil` côté handler. D'où deux crashs au chargement.
+
+- **🔴 BUG-03 — `inventory/server.lua:275` `addItem` nil.** Le handler
+  `noxa:playerLoaded` appelait `ply:addItem(...)` sur la copie sérialisée.
+  **Fix** : on re-récupère la **référence vivante** via `Noxa.Players.get(src)`
+  (même VM, aucune sérialisation, méthodes intactes) + guard `if not ply`.
+  Le kit de départ est de nouveau distribué (l'ancien correctif « guard + return »
+  proposé aurait silencieusement supprimé la dotation).
+- **🔴 BUG-02 — `es_extended/server/main.lua:72` `getName` nil.** Même cause via
+  l'event. **Fix** : le handler ESX récupère l'objet par l'**export**
+  `exports['noxa-fa']:GetPlayer(src)` (mécanisme déjà utilisé par
+  `ESX.GetPlayerFromId`) au lieu de l'argument d'event + guard nil. La couche
+  compat ESX charge enfin sans planter à la connexion.
+- **🔴 BUG-01 — anti-cheat : faux positifs spawn en boucle.** `entityCreating`
+  comptait les **entités du monde natif** (PNJ, trafic, véhicules garés) dont le
+  client devient owner réseau en les *streamant* → alertes « X entités créées »
+  en boucle. **Fix** : on ne compte que les entités **script/joueur** via
+  `GetEntityPopulationType` (6/7/10) ; l'ambiant (1..5) est ignoré, `nil` retombe
+  sur le seuil glissant existant.
+- **🟠 BUG-04 — `sv_projectName` / `sv_projectDesc` absents.** Ajoutés dans
+  `server.cfg` (`sets`).
+- **🟡 BUG-05 — build MenuV au 1er boot.** Vérifié : `resources/menuv/dist/`
+  (`menuv.html` + assets) est **déjà committé** et le `fxmanifest` sert le build
+  pré-compilé (`ui_page 'dist/menuv.html'`). Aucun `yarn`/webpack ne tourne au
+  démarrage → non reproductible en l'état. Résolu.
+- **🟡 BUG-06 — hairpin NAT** (server list query) : **environnemental**, aucun
+  correctif repo possible — conservé dans `BUGS.md` comme rappel d'exploitation.
+
+**Vérifications QA (aucun nouveau bug introduit) :**
+- **Intégrité SQL** : 0 table référencée en code absente de `install.sql` ; les
+  deux `install.sql` (racine + `resources/noxa-fa/sql/`) sont **identiques**.
+- **Index SQL** : toutes les colonnes de filtrage chaud sont indexées (license,
+  account_id, citizenid, created_at, owner_cid, plate…). Rien à ajouter.
+- **`Wait(0)`** : les 4 boucles client restantes (menottes, inconscient,
+  réparation, hotbar) sont **légitimes** (DisableControlAction / DrawText /
+  IsControlJustPressed par frame) — pas de busy-loop à corriger.
+- **Atomicité argent** : virement banque (`bank:transfer`) sûr —
+  `maxTransfer` (5 M) < `maxTransaction` (50 M), donc `addMoney` destinataire ne
+  peut pas échouer après le débit.
 
 ### Session 20h — Drogues & Trafic · Activités légales (MenuV, server-side)
 
