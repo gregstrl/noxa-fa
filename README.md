@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — stable-2.4 · 2026-06-05
+## État actuel — stable-2.5 · 2026-06-05
 
 | Système | État | Notes |
 |---|---|---|
@@ -505,7 +505,11 @@ noxa-fa/
 
 - **Logique critique 100 % server-side** : argent, jobs, immobilier, achats validés serveur.
 - **Sécurité par défaut** : tout event réseau passe par `Security.onNet`
-  (rate-limit + vérification de chargement + capture d'erreur).
+  (rate-limit anti-flood + vérification de chargement + capture d'erreur).
+- **Cooldown anti rapid-fire** : `Security.cooldown` impose **1000 ms minimum**
+  entre deux actions sensibles (achats véhicule/immobilier/boutique, dépôt/retrait/
+  virement banque, factures, caisse société, ventes activités/drogues, carburant).
+  Rejet souple **sans** compter de violation (un double-clic légitime n'est jamais sanctionné).
 - **Ownership vérifié** : personnages, factures, biens immobiliers.
 - **Anti-dupe** : achat immobilier atomique (réservation BDD avant débit).
 - **Auditabilité** : transactions, incidents et achats journalisés en base.
@@ -535,6 +539,16 @@ noxa-fa/
 - **Menu admin NUI** : **F10** (`/adminmenu`) — 9 sections, navigation flèches + souris
 - Commandes : `/kick` `/ban` `/unban` `/heal` `/revive` `/goto` `/bring` `/announce`
   `/setmoney` `/job` `/setjobwl` `/setgroup`
+
+## Historique — durcissement sécurité (stable-2.5)
+
+- **Cooldown sensible (anti rapid-fire)** : nouvel helper `Security.cooldown(src, key, ms)`
+  garantissant **1000 ms minimum** entre deux actions sensibles, appliqué à **16 events**
+  d'argent : `veh:buy/sell/retrieve`, `prop:buy`, `shop:buy`, `bank:deposit/withdraw/
+  transfer/invoice:create/invoice:pay`, `society:deposit/withdraw`, `act:buyTool/sell`,
+  `drug:sell`, `fuel:request`. Rejet **souple** (notify) qui n'incrémente pas le compteur
+  de violations — contrairement au rate-limit anti-flood, il ne peut donc jamais
+  auto-kick un joueur pour un double-clic. Complète l'anti-dupe atomique déjà en place.
 
 ## Historique — apports beta-1.1
 

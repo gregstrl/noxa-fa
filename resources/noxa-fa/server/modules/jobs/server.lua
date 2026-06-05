@@ -159,6 +159,7 @@ end)
 
 -- Dépôt : du compte banque perso du boss vers la caisse société.
 S.onNet('noxa:job:society:deposit', function(src, ply, amount)
+    if not S.cooldown(src, 'society:deposit') then return end
     if not bossGuard(ply, 'manageFunds') then return S.flag(src, 'society:deposit sans permission') end
     local society = ply:getSociety()
     if not society then return end
@@ -173,6 +174,7 @@ end)
 
 -- Retrait : de la caisse société vers le compte banque perso du boss.
 S.onNet('noxa:job:society:withdraw', function(src, ply, amount)
+    if not S.cooldown(src, 'society:withdraw') then return end
     if not bossGuard(ply, 'manageFunds') then return S.flag(src, 'society:withdraw sans permission') end
     local society = ply:getSociety()
     if not society then return end

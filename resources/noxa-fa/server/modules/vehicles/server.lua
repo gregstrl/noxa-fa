@@ -73,6 +73,7 @@ S.onNet('noxa:veh:catalog', function(src, ply)
 end)
 
 S.onNet('noxa:veh:buy', function(src, ply, spawn)
+    if not S.cooldown(src, 'veh:buy') then return end
     spawn = tostring(spawn or ''):lower()
     local total, base = Noxa.Economy.vehicleTotal(spawn)
     if not total then
@@ -124,6 +125,7 @@ S.onNet('noxa:veh:resaleList', function(src, ply)
 end)
 
 S.onNet('noxa:veh:sell', function(src, ply, plate)
+    if not S.cooldown(src, 'veh:sell') then return end
     plate = tostring(plate or '')
     local row = DB.getOwnedVehicleByPlate(plate, ply.citizenid)
     if not row then return S.flag(src, ('veh:sell non possédé: %s'):format(plate)) end
@@ -214,6 +216,7 @@ end)
 --  FOURRIÈRE — récupération contre amende
 -- ---------------------------------------------------------------------
 S.onNet('noxa:veh:retrieve', function(src, ply, plate)
+    if not S.cooldown(src, 'veh:retrieve') then return end
     plate = tostring(plate or '')
     local row = DB.getOwnedVehicleByPlate(plate, ply.citizenid)
     if not row then return S.flag(src, ('veh:retrieve non possédé: %s'):format(plate)) end

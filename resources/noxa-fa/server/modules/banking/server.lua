@@ -23,6 +23,7 @@ local Soc  = Noxa.Societies
 -- ---------------------------------------------------------------------
 
 S.onNet('noxa:bank:deposit', function(src, ply, amount)
+    if not S.cooldown(src, 'bank:deposit') then return end
     amount = U.sanitizeAmount(amount)
     if not amount or amount > CFG.Banking.maxDeposit then
         return TriggerClientEvent('noxa:notify', src, 'Montant invalide.', 'error')
@@ -35,6 +36,7 @@ S.onNet('noxa:bank:deposit', function(src, ply, amount)
 end)
 
 S.onNet('noxa:bank:withdraw', function(src, ply, amount)
+    if not S.cooldown(src, 'bank:withdraw') then return end
     amount = U.sanitizeAmount(amount)
     if not amount or amount > CFG.Banking.maxWithdraw then
         return TriggerClientEvent('noxa:notify', src, 'Montant invalide.', 'error')
@@ -51,6 +53,7 @@ end)
 -- ---------------------------------------------------------------------
 
 S.onNet('noxa:bank:transfer', function(src, ply, targetCid, amount)
+    if not S.cooldown(src, 'bank:transfer') then return end
     amount = U.sanitizeAmount(amount)
     if not amount or amount > CFG.Banking.maxTransfer then
         return TriggerClientEvent('noxa:notify', src, 'Montant invalide.', 'error')
@@ -83,6 +86,7 @@ end)
 
 -- Émission d'une facture (réservée aux métiers disposant de la perm `bill`).
 S.onNet('noxa:bank:invoice:create', function(src, ply, targetId, amount, label)
+    if not S.cooldown(src, 'bank:invoice:create') then return end
     if not ply:hasJobPerm('bill') then
         return S.flag(src, 'invoice:create sans permission')
     end
@@ -129,6 +133,7 @@ end)
 
 -- Paiement d'une facture (depuis la banque ; crédite la société émettrice).
 S.onNet('noxa:bank:invoice:pay', function(src, ply, invoiceId)
+    if not S.cooldown(src, 'bank:invoice:pay') then return end
     invoiceId = tonumber(invoiceId)
     if not invoiceId then return end
     -- Ownership : la facture doit cibler CE joueur et être en attente

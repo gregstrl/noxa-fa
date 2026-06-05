@@ -88,6 +88,7 @@ end)
 --  Achat (atomique + paiement bancaire borné)
 -- ---------------------------------------------------------------------
 S.onNet('noxa:prop:buy', function(src, ply, propId)
+    if not S.cooldown(src, 'prop:buy') then return end
     propId = tonumber(propId)
     local p = propId and cache[propId]
     if not p then return S.flag(src, 'prop:buy bien inconnu') end

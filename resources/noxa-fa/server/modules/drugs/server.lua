@@ -125,6 +125,7 @@ end)
 --  fourchette par type. Peut déclencher une alerte police.
 -- ---------------------------------------------------------------------
 S.onNet('noxa:drug:sell', function(src, ply)
+    if not S.cooldown(src, 'drug:sell') then return end
     if not nearInteract(src, 'drug_sell', nil, 3.5) then
         return S.flag(src, 'drug:sell hors zone')
     end

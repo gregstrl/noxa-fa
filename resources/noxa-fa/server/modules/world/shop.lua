@@ -22,6 +22,7 @@ local function findItem(shopId, itemId)
 end
 
 S.onNet('noxa:shop:buy', function(src, ply, shopId, itemId)
+    if not S.cooldown(src, 'shop:buy') then return end
     if type(shopId) ~= 'string' or type(itemId) ~= 'string' then
         return S.flag(src, 'shop:buy paramètres invalides')
     end

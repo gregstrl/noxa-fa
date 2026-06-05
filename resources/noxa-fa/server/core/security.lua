@@ -69,6 +69,29 @@ function S.checkRate(src, eventName)
     return true
 end
 
+--- Cooldown SOUPLE anti rapid-fire pour les actions sensibles (achats, ventes,
+--- virements…). Contrairement au rate-limit anti-flood, un dépassement n'est PAS
+--- compté comme violation : il ne déclenche donc aucun auto-kick (un double-clic
+--- légitime ne sanctionne jamais le joueur, il est simplement ignoré + notifié).
+--- Garantit un délai minimal `ms` (défaut 1000) entre deux appels d'une même clé.
+---@param src integer
+---@param key string
+---@param ms? integer délai minimal en millisecondes (défaut 1000)
+---@return boolean allowed
+function S.cooldown(src, key, ms)
+    ms = ms or 1000
+    local s = getState(src)
+    s.cooldowns = s.cooldowns or {}
+    local now  = GetGameTimer()
+    local last = s.cooldowns[key]
+    if last and (now - last) < ms then
+        TriggerClientEvent('noxa:notify', src, 'Patientez un court instant.', 'inform')
+        return false
+    end
+    s.cooldowns[key] = now
+    return true
+end
+
 --- Enregistre un event réseau sécurisé.
 --- Applique rate-limit + exige que le joueur soit pleinement chargé (sauf opt-out).
 --- Le handler reçoit (src, player, ...) où player est l'objet Player chargé.

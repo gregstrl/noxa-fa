@@ -41,6 +41,7 @@ end
 --  Achat d'outil (canne / couteau) — réglé en liquide.
 -- ---------------------------------------------------------------------
 S.onNet('noxa:act:buyTool', function(src, ply, key)
+    if not S.cooldown(src, 'act:buyTool') then return end
     local a = ACFG[tostring(key)]
     if not a then return S.flag(src, 'act:buyTool clé inconnue') end
     if not nearActivity(src, key, 4.0) then return S.flag(src, 'act:buyTool hors zone') end
@@ -99,6 +100,7 @@ end)
 --  Vente sur place — écoule tout le butin de l'activité contre du liquide.
 -- ---------------------------------------------------------------------
 S.onNet('noxa:act:sell', function(src, ply, key)
+    if not S.cooldown(src, 'act:sell') then return end
     local a = ACFG[tostring(key)]
     if not a then return S.flag(src, 'act:sell clé inconnue') end
     if not nearActivity(src, key, 5.0) then return S.flag(src, 'act:sell hors zone') end

@@ -14,6 +14,7 @@ local S    = Noxa.Security
 local FUEL = Noxa.Config.Fuel
 
 S.onNet('noxa:fuel:request', function(src, ply, plate, units)
+    if not S.cooldown(src, 'fuel:request') then return end
     units = U.clampInt(units, 1, FUEL.maxFuel)
     if not units then
         return TriggerClientEvent('noxa:notify', src, 'Quantité de carburant invalide.', 'error')
