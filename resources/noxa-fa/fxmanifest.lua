@@ -70,6 +70,10 @@ server_scripts {
     'server/modules/vehicles/server.lua',
     'server/modules/properties/server.lua',
     'server/modules/phone/server.lua',
+    -- Trafic de drogue & activités légales (récolte/transfo/vente, pêche/chasse).
+    -- Après le cœur (Players/Security/Economy) ; vérifient proximité POI server-side.
+    'server/modules/drugs/server.lua',
+    'server/modules/activities/server.lua',
     'server/main.lua',
 }
 
@@ -112,6 +116,10 @@ client_scripts {
     -- Immobilier & téléphone
     'client/modules/properties/client.lua',
     'client/modules/phone/client.lua',
+    -- Trafic de drogue & activités (MenuV aux POI : récolte/transfo/vente, pêche/chasse).
+    -- Après world/zones (s'enregistrent via World.on) et @menuv (menus).
+    'client/modules/drugs/client.lua',
+    'client/modules/activities/client.lua',
     'client/main.lua',
 }
 

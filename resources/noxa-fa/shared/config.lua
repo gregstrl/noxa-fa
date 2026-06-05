@@ -395,6 +395,59 @@ C.POI = {
             { x = -1255.60, y = -361.00, z = 36.91 },   -- showroom secondaire
         },
     },
+
+    -- =================================================================
+    --  TRAFIC DE DROGUE — chaîne récolte -> transformation -> vente.
+    --  Lieux illégaux : blips discrets (passer `blip = false` pour les
+    --  rendre secrets). interact.extra = clé de drogue (cf. C.Drugs).
+    -- =================================================================
+    weed_field = {
+        label = 'Plantation', blip = { sprite = 496, color = 2, scale = 0.7, shortRange = true },
+        interact = { type = 'drug_harvest', prompt = 'Récolter le cannabis', extra = 'weed' },
+        points = {
+            { x = 2223.00, y = 5577.00, z = 53.80 },
+            { x = 2008.00, y = 4988.00, z = 41.40 },
+        },
+    },
+    weed_lab = {
+        label = 'Labo cannabis', blip = false,
+        interact = { type = 'drug_process', prompt = 'Conditionner le cannabis', extra = 'weed' },
+        points = { { x = 2447.60, y = 4968.90, z = 46.80 } },
+    },
+    coca_field = {
+        label = 'Champ de coca', blip = { sprite = 84, color = 0, scale = 0.7, shortRange = true },
+        interact = { type = 'drug_harvest', prompt = 'Récolter la coca', extra = 'coke' },
+        points = {
+            { x = -525.00, y = 5328.00, z = 80.00 },
+            { x = 1538.00, y = 6326.00, z = 24.60 },
+        },
+    },
+    coke_lab = {
+        label = 'Labo cocaïne', blip = false,
+        interact = { type = 'drug_process', prompt = 'Raffiner la cocaïne', extra = 'coke' },
+        points = { { x = 1391.00, y = 3608.00, z = 38.90 } },
+    },
+    meth_supply = {
+        label = 'Dépôt chimique', blip = { sprite = 499, color = 7, scale = 0.7, shortRange = true },
+        interact = { type = 'drug_harvest', prompt = 'Récupérer les précurseurs', extra = 'meth' },
+        points = {
+            { x = 2747.00, y = 1556.00, z = 24.50 },
+            { x = 1707.00, y = 1996.00, z = 86.00 },
+        },
+    },
+    meth_lab = {
+        label = 'Labo méth', blip = false,
+        interact = { type = 'drug_process', prompt = 'Cuisiner la méth', extra = 'meth' },
+        points = { { x = 1391.00, y = 3605.00, z = 35.00 } },
+    },
+    drug_dealer = {
+        label = 'Revendeur', blip = false,
+        interact = { type = 'drug_sell', prompt = 'Proposer la marchandise' },
+        points = {
+            { x = -1166.00, y = -1571.00, z = 4.40 },   -- ruelle Vespucci
+            { x = 130.00,   y = -1304.00, z = 29.20 },   -- arrière-cour Strawberry
+        },
+    },
 }
 
 -- =====================================================================
@@ -526,6 +579,78 @@ C.Phone = {
     openKey = 'F1',
     maxContacts = 100,
     maxMessages = 200,   -- messages conservés par conversation
+}
+
+-- =====================================================================
+--  DROGUES & TRAFIC — chaîne récolte -> transformation -> vente.
+--  100 % autoritaire serveur : récolte/transfo/vente vérifient la
+--  proximité d'un POI compatible (cf. C.POI ci-dessus) + cooldown +
+--  possession réelle des items. Le client ne fait QUE présenter les
+--  menus MenuV et jouer l'animation ; aucune valeur n'est de confiance.
+--    raw     : item récolté au champ (drug_harvest)
+--    product : item obtenu après transformation (drug_process)
+--    harvest : { time(ms), amount{min,max} }
+--    process : { time(ms), need(raw→), give(produit←) }
+--    sell    : { price{min,max} } prix $/unité au revendeur (drug_sell)
+-- =====================================================================
+C.Drugs = {
+    harvestCooldown   = 3000,    -- délai mini (ms) entre deux récoltes
+    sellMax           = 15,      -- unités vendues max par transaction
+    policeAlertChance = 25,      -- % d'alerte police (dispatch) à la vente
+    types = {
+        weed = {
+            label   = 'Cannabis',
+            raw     = 'weed_bud',  product = 'weed_bag',
+            harvest = { time = 5000, amount = { 1, 3 } },
+            process = { time = 6000, need = 2, give = 1 },
+            sell    = { price = { 90, 150 } },
+        },
+        coke = {
+            label   = 'Cocaïne',
+            raw     = 'coca_leaf', product = 'coke_baggy',
+            harvest = { time = 6000, amount = { 1, 2 } },
+            process = { time = 8000, need = 3, give = 1 },
+            sell    = { price = { 180, 280 } },
+        },
+        meth = {
+            label   = 'Méthamphétamine',
+            raw     = 'meth_chem', product = 'meth_crystal',
+            harvest = { time = 5000, amount = { 1, 2 } },
+            process = { time = 9000, need = 2, give = 1 },
+            sell    = { price = { 220, 340 } },
+        },
+    },
+}
+
+-- =====================================================================
+--  ACTIVITÉS LÉGALES — pêche & chasse (cueillette chronométrée + vente).
+--  Même doctrine : le serveur vérifie proximité POI + outil + cooldown
+--  et tire le butin (tables de probabilité bornées). Vente sur place.
+--    tool      : item requis (acheté via le menu, prix = toolPrice)
+--    gatherTime: durée d'action (ms)
+--    loot      : { {item,label,chance(%),amount{min,max},sell($/u)}, ... }
+--    anim      : animation jouée pendant la cueillette
+-- =====================================================================
+C.Activities = {
+    fishing = {
+        label = 'Pêche', tool = 'fishingrod', toolPrice = 250,
+        gatherTime = 7000, cooldown = 2000,
+        anim = { dict = 'amb@world_human_stand_fishing@idle_a', name = 'idle_c' },
+        loot = {
+            { item = 'fish',   label = 'Poisson', chance = 70, amount = { 1, 2 }, sell = 45 },
+            { item = 'salmon', label = 'Saumon',  chance = 25, amount = { 1, 1 }, sell = 90 },
+            { item = 'shark',  label = 'Requin',  chance = 5,  amount = { 1, 1 }, sell = 350 },
+        },
+    },
+    hunting = {
+        label = 'Chasse', tool = 'huntingknife', toolPrice = 300,
+        gatherTime = 8000, cooldown = 3000,
+        anim = { dict = 'amb@world_human_gardener_plant@male@idle_a', name = 'idle_a' },
+        loot = {
+            { item = 'animal_meat', label = 'Viande', chance = 80, amount = { 1, 3 }, sell = 35 },
+            { item = 'animal_pelt', label = 'Peau',   chance = 45, amount = { 1, 1 }, sell = 120 },
+        },
+    },
 }
 
 return C

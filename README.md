@@ -1,21 +1,22 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — beta-2.0 · 2026-06-05
+## État actuel — stable-2.1 · 2026-06-05
 
 | Système | État | Notes |
 |---|---|---|
 | Framework Noxa + compat ESX | ✅ | Comptes, multi-personnages, classe Player autoritaire, statebag répliqué · shim `es_extended` (getSharedObject, xPlayer, callbacks, RegisterUsableItem, events `esx:*`) délègue à noxa-fa, zéro état dupliqué |
 | Spawn & Connexion | ✅ | Deferral (vérif ban), spawn robuste anti-gel (dégel garanti tout chemin) |
 | Création personnage NUI | ✅ | Caméra 3/4, head-blend, traits, overlays, vêtements — édition live + persistance |
-| Inventaire / Items | ✅ | Grille NUI drag&drop, hotbar 1-5, poids, use/jeter/donner — autorité serveur anti-dupe (source unique `noxa_characters.inventory`), 11 items |
+| Inventaire / Items | ✅ | Grille NUI drag&drop, hotbar 1-5, poids, use/jeter/donner — autorité serveur anti-dupe (source unique `noxa_characters.inventory`), 24 items (+ drogues, outils & butin d'activités) |
 | Économie & Prix | ✅ | Doctrine salaires (bandes/h justifiées), TVA, taxe virement, loyers, entretien, amendes, plafond cash, catalogue véhicules ; **revente concession** = faucet borné (50 % du prix HT × état, anti-spéculation) |
 | Véhicules (concessions, garages) | ✅ | **Menus MenuV** : concession F→S, **revente des véhicules remisés** (valeur selon l'état), garage sortir/remiser, fourrière (amende), persistance état (carburant/santé/mods) ; tuning 🟡 |
 | Menu Admin (F10) | ✅ | Panneau NUI 9 sections (joueurs, véhicules, TP, éco, jobs, sanctions, annonces, logs, serveur) — **rang revérifié serveur + log par action** |
 | Panel Gestion Serveur (F9) | ✅ | **Superadmin 8 onglets** : config live SANS restart — systèmes on/off, météo/heure, économie, boutiques, coordonnées (spawn/POI), jobs+grades, organisations, messages planifiés, whitelist. Mémoire + BDD + broadcast clients |
 | Anti-Cheat & Panel Staff (F3) | ✅ | **Détection server-side** (speed/teleport/godmode/armes/spawn/argent) + échelle alerte→freeze→kick→ban auto · panel staff NUI temps réel, spectate, screenshot, freeze, TP, kick/ban, alertes live + `noxa_anticheat_logs` |
-| Carte · Blips · POI | ✅ | 14 catégories de POI (+ concession), blips, zones de proximité + prompt NUI |
-| Drogues & Trafic | ❌ | Non démarré (prévu prochaine session) |
+| Carte · Blips · POI | ✅ | 21 catégories de POI (banque, ATM, services, concession + **champs/labos/revendeurs drogue**, pêche, chasse), blips configurables, zones de proximité + prompt NUI overlay pur |
+| Drogues & Trafic | ✅ | **Chaîne récolte → transformation → vente** (cannabis/cocaïne/méth) via **MenuV** aux POI · 100 % autoritaire serveur (proximité revérifiée, cooldown, possession réelle) · alerte **dispatch police** probabiliste (blip GPS) · butin dans l'inventaire anti-dupe |
+| Activités légales | ✅ | **Pêche & chasse** via **MenuV** : achat d'outil, cueillette chronométrée (anim), butin probabiliste borné, **vente sur place** — proximité/outil/cooldown serveur |
 | Téléphone | 🟡 | Contacts, SMS temps réel, Twitter, Banque, Carte, Réglages ; appels à venir (NUI custom) |
 | Jobs Police/EMS/Méca | ✅ | Police (menottes/fouille/amende/prison/MDT), EMS (ranimer/soigner + état inconscient), Méca (réparer + atelier) — portée & rôle revérifiés serveur |
 | Météo & Heure | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
@@ -23,7 +24,44 @@
 | HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 | MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; concession/garage/fourrière migrés |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 00h — Revente de véhicules (faucet économique borné) · 2026-06-05
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 20h — Drogues & Trafic · Activités (pêche/chasse) · 2026-06-05
+
+### Session 20h — Drogues & Trafic · Activités légales (MenuV, server-side)
+
+Deux boucles de gameplay RP entièrement **autoritaires serveur**, présentées
+100 % via **MenuV** aux POI (doctrine *« tout menu in-game → MenuV »*). Aucune
+nouvelle table SQL : le butin vit dans l'**inventaire déjà persisté** (anti-dupe),
+les cooldowns sont en mémoire serveur.
+
+**Trafic de drogue** (`shared/config.lua` → `C.Drugs`, `server/modules/drugs/`,
+`client/modules/drugs/`)
+- **Chaîne complète** sur 3 drogues (cannabis, cocaïne, méth) :
+  **récolte** au champ/dépôt (`drug_harvest`) → **transformation** au labo
+  (`drug_process`, ratio matière→produit) → **vente** au revendeur (`drug_sell`).
+- **Tout est recalculé serveur** : la **proximité d'un POI compatible** est
+  revérifiée (`nearInteract` scanne `C.POI` + position serveur du ped), quantités
+  et prix tirés serveur, **cooldown** de récolte anti-spam, **possession réelle**
+  des items exigée (transfo/vente). Le client n'émet qu'une **clé de drogue**.
+- **Coût RP** : la vente déclenche une **alerte dispatch police** probabiliste
+  (`policeAlertChance`) → notification + **blip GPS clignotant** chez les agents en
+  service, qui refroidit après 90 s.
+- **Présentation** : menus MenuV par phase (champ / labo / revendeur) + **animation
+  de cueillette** chronométrée, **annulable** si le joueur se déplace.
+- **Items** ajoutés : `weed_bud`/`weed_bag`, `coca_leaf`/`coke_baggy`,
+  `meth_chem`/`meth_crystal` (catégorie `drogue`).
+- **POI** : plantations cannabis/coca, dépôt chimique (blips discrets, réglables
+  `false`), labos & revendeurs **non blipés** (lieux secrets, RP de découverte).
+
+**Activités légales** (`shared/config.lua` → `C.Activities`, `server/modules/activities/`,
+`client/modules/activities/`)
+- **Pêche & chasse** : achat d'outil (canne / couteau, débité serveur),
+  **cueillette chronométrée** (animation propre à l'activité), **butin tiré au
+  sort borné** (table de probabilités par activité), **vente sur place**.
+- **Autorité serveur** : proximité du POI (`fishing`/`hunting`), **outil requis**,
+  **cooldown**, butin et prix recalculés ; le client n'émet qu'une clé d'activité.
+- **Items** ajoutés : `fishingrod`, `huntingknife`, `fish`/`salmon`/`shark`,
+  `animal_meat`/`animal_pelt`. Les POI pêche/chasse, jusqu'ici en *« disponible
+  prochainement »*, sont désormais **pleinement fonctionnels**.
 
 ### Session 00h — Économie : revente de véhicules à la concession
 
@@ -328,14 +366,18 @@ noxa-fa/
 │       ├── anticheat/        # détection server-side + endpoints panel staff
 │       ├── world/          # shop.lua (épicerie) · fuel.lua (station essence)
 │       ├── properties/     # immobilier : achat/entrée/verrou/mobilier (autoritaire)
-│       └── phone/          # téléphone : numéro, contacts, SMS, réseau social
+│       ├── phone/          # téléphone : numéro, contacts, SMS, réseau social
+│       ├── drugs/          # trafic : récolte/transfo/vente (proximité POI server-side)
+│       └── activities/     # pêche & chasse : outil/cueillette/vente (autoritaire)
 ├── client/
 │   ├── core/               # nui (pont) · spawn · ui
 │   └── modules/
 │       ├── characters/ hud/ economy/ jobs/ banking/ admin/ staff-panel/
 │       ├── world/          # blips · zones (proximité + prompt) · shop · fuel
 │       ├── properties/     # portes interactives, intérieurs, mobilier
-│       └── phone/          # ouverture F1, pont NUI
+│       ├── phone/          # ouverture F1, pont NUI
+│       ├── drugs/          # menus MenuV récolte/transfo/vente + anim + dispatch
+│       └── activities/     # menus MenuV pêche/chasse (outil/cueillette/vente)
 └── nui/                    # Interface 100 % custom (dossier par module)
     ├── shell.css/js        # Thème (design system) + routeur NUI + helpers
     ├── notify/ menus/ hud/ economy/ characters/ banking/
@@ -361,7 +403,8 @@ noxa-fa/
 
 ### Monde
 - **E** — interagir avec un POI à proximité (banque, distributeur, épicerie,
-  station essence, porte d'un bien immobilier)
+  station essence, porte d'un bien immobilier, **champ/labo/revendeur de drogue**,
+  **spot de pêche / zone de chasse**) → menu **MenuV** contextuel
 - **F1** — ouvrir/fermer le téléphone
 - `/meubles` — gérer le mobilier (à l'intérieur de son bien)
 

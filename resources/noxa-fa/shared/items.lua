@@ -77,6 +77,63 @@ C.Items = {
         label = 'Kit de réparation', weight = 2000, stackable = true, usable = false,
         emoji = '🔧', category = 'outil',
     },
+
+    -- Drogues : matière première (récolte) + produit fini (transformation).
+    -- Source de vérité gameplay : C.Drugs (chaîne & prix). Ici : inventaire.
+    weed_bud = {
+        label = 'Pousse de cannabis', weight = 80, stackable = true, usable = false,
+        emoji = '🌿', category = 'drogue',
+    },
+    weed_bag = {
+        label = 'Sachet de cannabis', weight = 50, stackable = true, usable = true,
+        emoji = '🍀', category = 'drogue', effects = { stress = -12 },
+    },
+    coca_leaf = {
+        label = 'Feuille de coca', weight = 60, stackable = true, usable = false,
+        emoji = '🍃', category = 'drogue',
+    },
+    coke_baggy = {
+        label = 'Sachet de cocaïne', weight = 40, stackable = true, usable = false,
+        emoji = '❄️', category = 'drogue',
+    },
+    meth_chem = {
+        label = 'Précurseurs chimiques', weight = 200, stackable = true, usable = false,
+        emoji = '🧪', category = 'drogue',
+    },
+    meth_crystal = {
+        label = 'Cristaux de méth', weight = 60, stackable = true, usable = false,
+        emoji = '💎', category = 'drogue',
+    },
+
+    -- Activités légales : outils + butin (pêche / chasse). Vente sur place.
+    fishingrod = {
+        label = 'Canne à pêche', weight = 1500, stackable = false, usable = false,
+        emoji = '🎣', category = 'outil',
+    },
+    huntingknife = {
+        label = 'Couteau de chasse', weight = 400, stackable = false, usable = false,
+        emoji = '🔪', category = 'outil',
+    },
+    fish = {
+        label = 'Poisson', weight = 300, stackable = true, usable = false,
+        emoji = '🐟', category = 'divers',
+    },
+    salmon = {
+        label = 'Saumon', weight = 400, stackable = true, usable = false,
+        emoji = '🐠', category = 'divers',
+    },
+    shark = {
+        label = 'Requin', weight = 3000, stackable = true, usable = false,
+        emoji = '🦈', category = 'divers',
+    },
+    animal_meat = {
+        label = 'Viande de gibier', weight = 500, stackable = true, usable = false,
+        emoji = '🍖', category = 'divers',
+    },
+    animal_pelt = {
+        label = 'Peau de bête', weight = 800, stackable = true, usable = false,
+        emoji = '🦌', category = 'divers',
+    },
 }
 
 --- Définition d'un item (ou nil si inconnu).
