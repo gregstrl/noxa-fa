@@ -62,21 +62,39 @@ end
 -- ---------------------------------------------------------------------
 local function buildXPlayer(ply)
     local src = ply.source
+    -- BUG-02 FIX : si ply a transité par TriggerEvent, sa metatable (méthodes
+    -- getName/getMoney/getJobGradeData...) est perdue. On récupère alors la
+    -- référence VIVANTE depuis le registry noxa-fa avant tout usage.
+    if type(ply.getName) ~= 'function' then
+        local live = noxa(src)
+        if live then ply = live end
+    end
     local x = {}
     local vars = {}
+
+    -- BUG-02 FIX : ply peut arriver via TriggerEvent (metatable perdue à la
+    -- sérialisation) → ne jamais appeler ply:getName(). On reconstruit le nom
+    -- depuis les champs bruts firstname/lastname qui, eux, survivent.
+    local function safeName()
+        local fn = ply.firstname or ''
+        local ln = ply.lastname or ''
+        local full = (fn .. ' ' .. ln):gsub('^%s+', ''):gsub('%s+$', '')
+        if full == '' then return ply.name or GetPlayerName(src) or 'Inconnu' end
+        return full
+    end
 
     -- Champs ESX usuels (lecture directe)
     x.source      = src
     x.playerId    = src
     x.identifier  = ply.license
-    x.name        = ply:getName()
+    x.name        = safeName()
     x.firstName   = ply.firstname
     x.lastName    = ply.lastname
     x.job         = buildJob(ply)
     x.group       = (ply.staffRank and ply.staffRank ~= 'user') and ply.staffRank or 'user'
 
     -- Identité / divers
-    function x.getName() return ply:getName() end
+    function x.getName() return safeName() end
     function x.getIdentifier() return ply.license end
     function x.getPlayerId() return src end
     function x.getSource() return src end
