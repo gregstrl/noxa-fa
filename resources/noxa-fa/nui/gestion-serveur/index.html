@@ -1,6 +1,41 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <script>
+  /* NOXA FA — pont de branchement (n'altère pas le design : lit les données
+     réelles déposées sur la fenêtre parente par le serveur FiveM). Défini
+     AVANT le bundle ; le piège sur window.MDATA survit au remplacement du
+     document par l'unpacker. Sans données parentes, le mock s'affiche tel quel. */
+  (function () {
+    function parentData() {
+      try { return (window.parent && window.parent.__noxaGestionData) || null; } catch (e) { return null; }
+    }
+    var _mock = null;
+    Object.defineProperty(window, 'MDATA', {
+      configurable: true,
+      get: function () {
+        var real = parentData();
+        return real ? Object.assign({}, _mock || {}, real) : _mock;
+      },
+      set: function (v) { _mock = v; }
+    });
+    function transparent() {
+      if (document.getElementById('__noxa_tp')) return;
+      var st = document.createElement('style');
+      st.id = '__noxa_tp';
+      st.textContent = 'html,body{background:transparent !important;}';
+      (document.head || document.documentElement).appendChild(st);
+    }
+    var tries = 0, iv = setInterval(function () { transparent(); if (++tries > 50) clearInterval(iv); }, 200);
+    document.addEventListener('DOMContentLoaded', transparent);
+
+    // Échap : l'iframe a le focus NUI, donc l'Échap du shell ne déclenche pas.
+    // On relaie la fermeture au parent (même origine nui://).
+    window.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { try { window.parent && window.parent.NoxaDesigns && window.parent.NoxaDesigns.handleEscape(); } catch (_) {} }
+    }, true);
+  })();
+  </script>
   <meta charset="utf-8">
   <title>NOXA FA · Gestion Serveur</title>
   <style>

@@ -557,6 +557,123 @@ Noxa.Security.onNet('noxa:cfg:refresh', function(src, ply)
     pushSnapshot(src)
 end)
 
+-- =====================================================================
+--  PANEL GESTION SERVEUR (design autonome NUI) — éditeur de config
+--  ---------------------------------------------------------------------
+--  Construit `window.MDATA` attendu par nui/gestion-serveur/index.html à
+--  partir de la config RÉELLE en mémoire (items, véhicules, POI, jobs). Le
+--  design est un export figé (lecture/visualisation) : les mutations live
+--  restent sur le panel gestion FONCTIONNEL (F9). Réservé superadmin.
+-- =====================================================================
+
+local ITEM_CATS = { 'Nourriture', 'Boissons', 'Armes', 'Outils', 'Drogues', 'Médical', 'Divers' }
+local VEH_CATS  = { 'F', 'E', 'D', 'C', 'B', 'A', 'S' }
+local LOC_TYPES = { 'Banque', 'Boutique', 'Garage', 'Spawn', 'Marqueur' }
+
+-- Compte les joueurs en ligne par job (champ « members » du design).
+local function countJobMembers()
+    local n = {}
+    for _, sid in ipairs(GetPlayers()) do
+        local ply = Noxa.Players.get(tonumber(sid))
+        if ply and ply.job then n[ply.job] = (n[ply.job] or 0) + 1 end
+    end
+    return n
+end
+
+local function buildMItems()
+    local out = {}
+    for id, it in pairs(CFG.Items or {}) do
+        out[#out + 1] = {
+            id = id, label = it.label or id, name = id,
+            cat = it.category or 'Divers',
+            weight = math.floor((it.weight or 0) / 1000 * 100 + 0.5) / 100,  -- g -> kg
+            price = it.price or 0,
+            stack = it.stackable ~= false,
+            rare = it.rare == true,
+            removable = it.removable ~= false,
+            desc = it.description or it.desc or '',
+        }
+    end
+    table.sort(out, function(a, b) return a.label < b.label end)
+    return out
+end
+
+local function buildMVehicles()
+    local out = {}
+    for _, v in ipairs(CFG.Vehicles or {}) do
+        local cls = CFG.VehicleClasses and CFG.VehicleClasses[v.class]
+        out[#out + 1] = {
+            id = v.spawn, label = v.label or v.spawn, model = v.spawn,
+            brand = '—', cat = v.class or '—',
+            vclass = cls and cls.label or v.class or '—',
+            price = v.price or 0, seats = v.seats or 4,
+        }
+    end
+    return out
+end
+
+local function buildMLocations()
+    local out = {}
+    for cat, def in pairs(CFG.POI or {}) do
+        local blip = def.blip or {}
+        for i, p in ipairs(def.points or {}) do
+            out[#out + 1] = {
+                id = ('%s_%d'):format(cat, i),
+                name = ('%s #%d'):format(def.label or cat, i),
+                type = def.label or cat,
+                x = p.x, y = p.y, z = p.z, h = p.h or 0.0,
+                job = (def.interact and def.interact.job) or '—',
+                sprite = blip.sprite or 1, color = blip.color or 0,
+            }
+        end
+    end
+    table.sort(out, function(a, b) return a.name < b.name end)
+    return out
+end
+
+local function buildMJobs()
+    local members = countJobMembers()
+    local out, ids = {}, { '—' }
+    for id, def in pairs(E.Jobs) do
+        local grades = {}
+        for i = 0, 20 do
+            local g = def.grades and def.grades[i]
+            if g then grades[#grades + 1] = g.label or g.name end
+        end
+        local base = def.grades and def.grades[0]
+        out[#out + 1] = {
+            id = id, label = def.label or id,
+            members = members[id] or 0,
+            grades = grades,
+            salary = base and base.salary or 0,
+        }
+        if id ~= 'unemployed' then ids[#ids + 1] = id end
+    end
+    table.sort(out, function(a, b) return a.label < b.label end)
+    return out, ids
+end
+
+Noxa.Security.onNet('noxa:gestion:open', function(src, ply)
+    if not isSuper(src) then
+        return Noxa.Security.flag(src, 'gestion:open sans rang superadmin')
+    end
+    logAction(src, ply, 'a ouvert le panel gestion serveur (design)')
+    local jobs, jobIds = buildMJobs()
+    local players = #GetPlayers()
+    TriggerClientEvent('noxa:gestion:grant', src, {
+        serverName = CFG.ServerName,
+        version    = CFG.Systems and CFG.Systems.version or 'Noxa FA · ESX',
+        online     = players,
+        maxSlots   = GetConvarInt('sv_maxclients', 48),
+        itemCats   = ITEM_CATS, vehCats = VEH_CATS, locTypes = LOC_TYPES,
+        items      = buildMItems(),
+        vehicles   = buildMVehicles(),
+        locations  = buildMLocations(),
+        jobs       = jobs,
+        jobIds     = jobIds,
+    })
+end)
+
 Noxa.Security.onNet('noxa:cfg:action', function(src, ply, payload)
     if not isSuper(src) then return Noxa.Security.flag(src, 'cfg:action sans rang superadmin') end
     if type(payload) ~= 'table' or type(payload.action) ~= 'string' then

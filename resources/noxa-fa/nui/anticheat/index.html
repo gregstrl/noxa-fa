@@ -1,6 +1,64 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <script>
+  /* NOXA FA — pont de branchement (n'altère pas le design : lit les données
+     réelles déposées sur la fenêtre parente par le serveur FiveM). Défini
+     AVANT le bundle ; le piège sur window.DATA survit au remplacement du
+     document par l'unpacker (replaceWith conserve le même window). Sans
+     données parentes, le mock d'origine s'affiche tel quel. */
+  (function () {
+    function parentData() {
+      try { return (window.parent && window.parent.__noxaAnticheatData) || null; } catch (e) { return null; }
+    }
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    function defAgo(d) { d = new Date(d); var s = Math.round((Date.now() - d.getTime()) / 1000);
+      if (s < 60) return 'il y a ' + s + 's'; var m = Math.round(s / 60);
+      if (m < 60) return 'il y a ' + m + ' min'; var h = Math.round(m / 60);
+      if (h < 24) return 'il y a ' + h + ' h'; return 'il y a ' + Math.round(h / 24) + ' j'; }
+    function defFmt(d) { d = new Date(d); return pad(d.getHours()) + ':' + pad(d.getMinutes()) + ':' + pad(d.getSeconds()); }
+
+    var _mock = null;
+    Object.defineProperty(window, 'DATA', {
+      configurable: true,
+      get: function () {
+        var real = parentData();
+        if (!real) return _mock;
+        var m = Object.assign({}, _mock || {}, real);
+        // Helpers non sérialisables depuis Lua : on garde ceux du mock (ou secours).
+        m.ago = (_mock && _mock.ago) || defAgo;
+        m.fmtTime = (_mock && _mock.fmtTime) || defFmt;
+        m.now = new Date();
+        // Réhydrate les dates ISO envoyées par le serveur (vues relatives).
+        if (Array.isArray(real.detections)) m.detections = real.detections.map(function (x) {
+          return Object.assign({}, x, { time: x && x.time ? new Date(x.time) : new Date() });
+        });
+        if (Array.isArray(real.watchlist)) m.watchlist = real.watchlist.map(function (x) {
+          return Object.assign({}, x, { since: x && x.since ? new Date(x.since) : new Date() });
+        });
+        return m;
+      },
+      set: function (v) { _mock = v; }
+    });
+
+    // Fond transparent : le design dessine sa propre tablette au-dessus du jeu.
+    function transparent() {
+      if (document.getElementById('__noxa_tp')) return;
+      var st = document.createElement('style');
+      st.id = '__noxa_tp';
+      st.textContent = 'html,body{background:transparent !important;}';
+      (document.head || document.documentElement).appendChild(st);
+    }
+    var tries = 0, iv = setInterval(function () { transparent(); if (++tries > 50) clearInterval(iv); }, 200);
+    document.addEventListener('DOMContentLoaded', transparent);
+
+    // Échap : l'iframe a le focus NUI, donc l'Échap du shell ne déclenche pas.
+    // On relaie la fermeture au parent (même origine nui://).
+    window.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape') { try { window.parent && window.parent.NoxaDesigns && window.parent.NoxaDesigns.handleEscape(); } catch (_) {} }
+    }, true);
+  })();
+  </script>
   <meta charset="utf-8">
   <title>NOXA FA · Panel Anti-Cheat</title>
   <style>

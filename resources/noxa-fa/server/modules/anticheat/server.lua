@@ -635,4 +635,200 @@ Noxa.Security.onNet('noxa:staff:screenshotResult', function(src, ply, requesterS
     DB.log('anticheat', 'info', nil, ('screenshot de src:%s -> %s'):format(src, url))
 end, { requireLoaded = false })
 
+-- =====================================================================
+--  PANEL ANTI-CHEAT (design autonome NUI) — tableau de bord LECTURE SEULE
+--  ---------------------------------------------------------------------
+--  Construit `window.DATA` attendu par nui/anticheat/index.html à partir de
+--  l'état serveur RÉEL (joueurs, alertes mémoire, logs/bans BDD). Le design
+--  est un export figé : ses boutons d'action ne rappellent pas Lua — les
+--  sanctions restent sur le panel staff FONCTIONNEL (F3). Ce panel sert de
+--  console de visualisation enrichie (helper+ ; IP réservée admin+).
+-- =====================================================================
+
+local AC_TYPE_LABEL = {
+    speedhack = 'Speed Hack', teleport = 'Teleport', godmode = 'God Mode',
+    weapon = 'Weapon Spawn', spawn = 'Entity Spam', money = 'Money Exploit',
+}
+local SEVERITY_CONFIDENCE = { low = 35, medium = 65, high = 85, critical = 97 }
+local STAFF_ROLE = { helper = 'Support', mod = 'Modérateur', admin = 'Admin', superadmin = 'Founder' }
+
+local function initialsOf(name)
+    local a, b = tostring(name or '?'):match('(%a)%a*%s+(%a)')
+    if a and b then return (a .. b):upper() end
+    return tostring(name or '?'):sub(1, 2):upper()
+end
+
+local function fmtPlaytime(secs)
+    secs = math.max(0, secs or 0)
+    return ('%dh %02dm'):format(math.floor(secs / 3600), math.floor((secs % 3600) / 60))
+end
+
+local function statusOf(score)
+    if score >= 12 then return 'critical' end
+    if score >= 4 then return 'warn' end
+    return 'clean'
+end
+
+local function isoFromEpoch(t)
+    return os.date('!%Y-%m-%dT%H:%M:%SZ', t or os.time())
+end
+
+local function buildAcPlayers(canSeeIp)
+    local list = {}
+    for _, sid in ipairs(GetPlayers()) do
+        local src = tonumber(sid)
+        local ply = Noxa.Players.get(src)
+        local st  = state[src]
+        local score = st and st.score or 0
+        local jobDef = ply and E.Jobs[ply.job]
+        local name = ply and ply:getName() or GetPlayerName(src) or ('src:' .. src)
+        list[#list + 1] = {
+            id       = src,
+            name     = name,
+            initials = initialsOf(name),
+            license  = (GetPlayerIdentifierByType(src, 'license') or ''),
+            steam    = (GetPlayerIdentifierByType(src, 'steam') or GetPlayerName(src) or ''),
+            discord  = (GetPlayerIdentifierByType(src, 'discord') or ''):gsub('discord:', ''),
+            ip       = canSeeIp and (GetPlayerEndpoint(src) or '—') or '—',
+            ping     = GetPlayerPing(src),
+            playtime = fmtPlaytime(os.time() - (joinTimes[src] or os.time())),
+            trust    = math.max(0, math.min(100, 100 - score * 6)),
+            flags    = score > 0 and math.ceil(score / 2) or 0,
+            status   = statusOf(score),
+            job      = (jobDef and jobDef.label) or (ply and ply.job) or 'Civil',
+            joined   = '—',
+        }
+    end
+    table.sort(list, function(a, b) return a.flags > b.flags end)
+    return list
+end
+
+local function buildAcDetections()
+    local out = {}
+    for i = #recentAlerts, 1, -1 do
+        local a = recentAlerts[i]
+        out[#out + 1] = {
+            id         = ('D-%04X'):format(((a.time or 0) + i) % 0xFFFF),
+            type       = AC_TYPE_LABEL[a.kind] or a.kind,
+            player     = a.name, pid = a.src,
+            severity   = a.severity or 'low',
+            status     = (a.action == 'ban' or a.action == 'kick') and 'resolved' or 'open',
+            time       = isoFromEpoch(a.time),
+            detail     = a.detail,
+            confidence = SEVERITY_CONFIDENCE[a.severity] or 50,
+        }
+        if #out >= 40 then break end
+    end
+    return out
+end
+
+local function buildAcWatchlist()
+    local out = {}
+    for _, sid in ipairs(GetPlayers()) do
+        local src = tonumber(sid)
+        local st = state[src]
+        if st and (st.score or 0) > 0 then
+            local ply = Noxa.Players.get(src)
+            local name = ply and ply:getName() or GetPlayerName(src) or ('src:' .. src)
+            out[#out + 1] = {
+                pid = src, name = name, initials = initialsOf(name),
+                trust = math.max(0, 100 - st.score * 6),
+                since = isoFromEpoch(joinTimes[src]),
+                note  = ('Score anti-triche %d — surveillance automatique.'):format(st.score),
+                by    = 'Anti-Cheat',
+            }
+        end
+    end
+    return out
+end
+
+local function buildAcLogs()
+    local out = {}
+    for _, r in ipairs(DB.getAnticheatLogs('all', 30)) do
+        out[#out + 1] = {
+            time  = tostring(r.created_at or ''):sub(12, 19),
+            tag   = 'DETECT',
+            level = r.severity or 'info',
+            msg   = ('%s — %s (#%s) %s'):format(AC_TYPE_LABEL[r.type] or r.type or '?',
+                r.name or '?', r.src or '?', r.detail or ''),
+        }
+    end
+    return out
+end
+
+local function buildAcBans()
+    local out = {}
+    for _, r in ipairs(DB.getRecentBans(40)) do
+        local duration
+        if not r.expire then
+            duration = 'Permanent'
+        else
+            local left = (tonumber(r.expire) or 0) - os.time()
+            duration = (left <= 0) and 'Expiré' or ('%d j'):format(math.ceil(left / 86400))
+        end
+        out[#out + 1] = {
+            id       = ('B-%s'):format(r.id),
+            player   = r.name or r.license or '?',
+            license  = r.license or '',
+            reason   = r.reason or '—',
+            by       = r.banned_by or 'console',
+            date     = tostring(r.created_at or ''):sub(1, 10),
+            duration = duration,
+            active   = (tonumber(r.active) or 0) == 1,
+        }
+    end
+    return out
+end
+
+local function buildAcStaff()
+    local out = {}
+    for _, src in ipairs(staffSources()) do
+        local ply = Noxa.Players.get(src)
+        local name = ply and ply:getName() or GetPlayerName(src) or ('src:' .. src)
+        local rank = rankOf(src)
+        out[#out + 1] = {
+            name = name, initials = initialsOf(name),
+            role = STAFF_ROLE[rank] or rank, online = true,
+            actions = 0, since = fmtPlaytime(os.time() - (joinTimes[src] or os.time())),
+        }
+    end
+    return out
+end
+
+local function buildAcStats()
+    local counts, detByType = {}, {}
+    for _, a in ipairs(recentAlerts) do
+        local lbl = AC_TYPE_LABEL[a.kind] or a.kind
+        counts[lbl] = (counts[lbl] or 0) + 1
+    end
+    for lbl, v in pairs(counts) do detByType[#detByType + 1] = { label = lbl, value = v } end
+    table.sort(detByType, function(a, b) return a.value > b.value end)
+    -- Séries de longueur fixe (le design itère 24/12 points) — valeurs réelles courantes.
+    local online = #GetPlayers()
+    local playerSeries, detTrend = {}, {}
+    for i = 1, 24 do playerSeries[i] = online end
+    for i = 1, 12 do detTrend[i] = #recentAlerts end
+    return { playerSeries = playerSeries, detByType = detByType, detTrend = detTrend }
+end
+
+Noxa.Security.onNet('noxa:acpanel:open', function(src, ply)
+    if not hasStaff(src, 'helper') then return Noxa.Security.flag(src, 'acpanel:open sans rang') end
+    local canSeeIp = hasStaff(src, 'admin')
+    DB.log('anticheat', 'info', ply and ply.license,
+        ('%s a ouvert le panel anti-cheat (design)'):format(actorName(src)))
+    TriggerClientEvent('noxa:acpanel:grant', src, {
+        serverName = Noxa.Config.ServerName,
+        maxSlots   = GetConvarInt('sv_maxclients', 48),
+        players    = buildAcPlayers(canSeeIp),
+        detections = buildAcDetections(),
+        watchlist  = buildAcWatchlist(),
+        bans       = buildAcBans(),
+        logs       = buildAcLogs(),
+        staff      = buildAcStaff(),
+        detTypes   = { 'Aimbot', 'Triggerbot', 'Speed Hack', 'Teleport', 'God Mode',
+                       'Noclip', 'Money Exploit', 'Weapon Spawn', 'Lua Injection', 'Resource Tampering' },
+        stats      = buildAcStats(),
+    })
+end)
+
 return AC

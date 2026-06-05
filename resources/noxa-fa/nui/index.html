@@ -28,6 +28,7 @@
     <link rel="stylesheet" href="admin/admin.css" />
     <link rel="stylesheet" href="server-panel/server-panel.css" />
     <link rel="stylesheet" href="staff-panel/staff-panel.css" />
+    <link rel="stylesheet" href="designs/designs.css" />
 </head>
 <body>
     <!-- Couche notifications (toasts) -->
@@ -77,6 +78,10 @@
     <!-- Panel staff & anti-cheat (overlay staff, z-index 60) -->
     <div id="staffpanel" class="hidden"></div>
 
+    <!-- Designs autonomes hébergés en iframe (overlay z-index 60) -->
+    <div id="design-anticheat" class="design-host hidden"><iframe title="Anti-Cheat" referrerpolicy="no-referrer"></iframe></div>
+    <div id="design-gestion" class="design-host hidden"><iframe title="Gestion serveur" referrerpolicy="no-referrer"></iframe></div>
+
     <!-- Routeur NUI + helpers (chargé en premier) -->
     <script src="shell.js"></script>
     <!-- Modules d'interface -->
@@ -95,5 +100,6 @@
     <script src="admin/admin.js"></script>
     <script src="server-panel/server-panel.js"></script>
     <script src="staff-panel/staff-panel.js"></script>
+    <script src="designs/designs.js"></script>
 </body>
 </html>

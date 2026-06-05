@@ -104,6 +104,8 @@ client_scripts {
     'client/modules/server-panel/client.lua',
     -- Panel staff & anti-cheat (F3) : spectate discret, screenshot, report FPS.
     'client/modules/staff-panel/client.lua',
+    -- Designs autonomes hébergés en iframe (Anti-Cheat F8 / Gestion serveur).
+    'client/modules/designs/client.lua',
     -- Monde : carte (blips), zones de proximité, boutique, carburant
     'client/modules/world/blips.lua',
     'client/modules/world/zones.lua',
@@ -168,4 +170,9 @@ files {
     -- Panel staff & anti-cheat NUI (F3, helper+)
     'nui/staff-panel/staff-panel.css',
     'nui/staff-panel/staff-panel.js',
+    -- Hôte des designs autonomes (iframe) + bundles Claude Design.
+    'nui/designs/designs.css',
+    'nui/designs/designs.js',
+    'nui/anticheat/index.html',
+    'nui/gestion-serveur/index.html',
 }

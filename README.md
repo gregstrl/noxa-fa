@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — stable-2.5 · 2026-06-05
+## État actuel — stable-2.6 · 2026-06-05
 
 | Système | État | Notes |
 |---|---|---|
@@ -12,8 +12,8 @@
 | Économie & Prix | ✅ | Doctrine salaires (bandes/h justifiées), TVA, taxe virement, loyers, entretien, amendes, plafond cash, catalogue véhicules ; **revente concession** = faucet borné (50 % du prix HT × état, anti-spéculation) |
 | Véhicules (concessions, garages) | ✅ | **Menus MenuV** : concession F→S, **revente des véhicules remisés** (valeur selon l'état), garage sortir/remiser, fourrière (amende), persistance état (carburant/santé/mods) ; tuning 🟡 |
 | Menu Admin (F10) | ✅ | Panneau NUI 9 sections (joueurs, véhicules, TP, éco, jobs, sanctions, annonces, logs, serveur) — **rang revérifié serveur + log par action** |
-| Panel Gestion Serveur (F9) | ✅ | **Superadmin 8 onglets** : config live SANS restart — systèmes on/off, météo/heure, économie, boutiques, coordonnées (spawn/POI), jobs+grades, organisations, messages planifiés, whitelist. Mémoire + BDD + broadcast clients |
-| Anti-Cheat & Panel Staff (F3) | ✅ | **Détection server-side** (speed/teleport/godmode/armes/spawn/argent) + échelle alerte→freeze→kick→ban auto · panel staff NUI temps réel, spectate, screenshot, freeze, TP, kick/ban, alertes live + `noxa_anticheat_logs` |
+| Panel Gestion Serveur (F9) | ✅ | **Superadmin 8 onglets** : config live SANS restart — systèmes on/off, météo/heure, économie, boutiques, coordonnées (spawn/POI), jobs+grades, organisations, messages planifiés, whitelist. Mémoire + BDD + broadcast clients · **design Claude `/gestion`** (iframe lecture seule : items/véhicules/POI/jobs réels) |
+| Anti-Cheat & Panel Staff (F3) | ✅ | **Détection server-side** (speed/teleport/godmode/armes/spawn/argent) + échelle alerte→freeze→kick→ban auto · panel staff NUI temps réel, spectate, screenshot, freeze, TP, kick/ban, alertes live + `noxa_anticheat_logs` · **dashboard Claude `F8`** (iframe lecture seule : joueurs/détections/watchlist/bans/logs réels, helper+ ; IP admin+) |
 | Carte · Blips · POI | ✅ | 21 catégories de POI (banque, ATM, services, concession + **champs/labos/revendeurs drogue**, pêche, chasse), blips configurables, zones de proximité + prompt NUI overlay pur |
 | Drogues & Trafic | ✅ | **Chaîne récolte → transformation → vente** (cannabis/cocaïne/méth) via **MenuV** aux POI · 100 % autoritaire serveur (proximité revérifiée, cooldown, possession réelle) · alerte **dispatch police** probabiliste (blip GPS) · butin dans l'inventaire anti-dupe |
 | Activités légales | ✅ | **Pêche & chasse** via **MenuV** : achat d'outil, cueillette chronométrée (anim), butin probabiliste borné, **vente sur place** — proximité/outil/cooldown serveur |
@@ -24,7 +24,50 @@
 | HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 | MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; **migration in-game terminée** — concession/garage/fourrière + menu patron jobs + immobilier (porte/mobilier/confirmation). NUI custom réservée à HUD/notifs/banque/téléphone/inventaire/panels |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session 17h — Loyers immobiliers (cycle fiscal) · 2026-06-05
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — Branchement designs Anti-Cheat (F8) & Gestion serveur (/gestion) · 2026-06-05
+
+### Session — Branchement des designs autonomes (Anti-Cheat F8 · Gestion serveur /gestion)
+
+Branchement de la **logique FiveM** sur les deux designs livrés (exports React
+mono-fichier « Claude Design »), **sans altérer le visuel**. Ces bundles lisent
+leur jeu de données global **une seule fois au montage** (`window.DATA` pour
+l'anti-cheat, `window.MDATA` pour la gestion) et leurs boutons d'action ne
+rappellent pas Lua : on les branche donc en **consoles de visualisation lecture
+seule** alimentées par des **données serveur réelles**. Les sanctions/mutations
+restent sur les panels **fonctionnels** existants (staff **F3**, gestion **F9**).
+
+**Hébergement NUI** (`nui/designs/`, `nui/index.html`, `nui/shell.js`)
+- Une seule `ui_page` par ressource : chaque design est chargé en **`<iframe>`**
+  plein écran (overlay z-index **60**), (re)chargée à chaque ouverture pour un
+  montage React propre avec la donnée fraîche.
+- `nui/designs/designs.js` : hôte générique (listeners `noxa:<panel>:open/close`),
+  dépose la donnée réelle sur la fenêtre parente, gère l'anti-superposition et
+  relaie l'Échap (l'iframe détenant le focus NUI) vers la fermeture côté Lua.
+
+**Pont non invasif** (injecté dans le `<head>` *externe* de chaque design)
+- Piège sur `window.DATA`/`window.MDATA` (défini **avant** le bundle ; survit au
+  `replaceWith` de l'unpacker car porté par `window`) : fusionne le mock de
+  secours avec la donnée réelle de la fenêtre parente, **réhydrate les dates ISO**
+  et conserve les helpers non sérialisables. **Fond transparent** réappliqué après
+  le swap du document. Sans donnée parente, le mock d'origine s'affiche tel quel.
+
+**Serveur (données réelles, rang revérifié)**
+- `server/modules/anticheat/server.lua` : `noxa:acpanel:open` (**helper+**, IP
+  réservée **admin+**) construit `window.DATA` — joueurs en ligne (trust/flags/
+  statut dérivés du score AC), détections (tampon d'alertes mémoire), watchlist
+  (score > 0), bans (`DB.getRecentBans`), logs (`noxa_anticheat_logs`), staff en
+  ligne, stats par type.
+- `server/modules/config-manager/server.lua` : `noxa:gestion:open` (**superadmin**)
+  construit `window.MDATA` depuis la config vivante — items (`C.Items`), véhicules
+  (`C.Vehicles` + classes), POI (`C.POI` aplati), jobs+grades (`E.Jobs`, membres
+  comptés en ligne).
+- `server/core/db.lua` : `DB.getRecentBans(limit)` (join `noxa_accounts` pour le
+  pseudo). Aucune nouvelle table (intégrité SQL inchangée).
+
+**Client** (`client/modules/designs/client.lua`)
+- `/anticheat` (**F8**) et `/gestion` : émettent l'intention ; ouverture
+  **accordée** par le serveur (grant) ; focus + anti-superposition + fermeture
+  Échap relayée.
 
 ### Session 17h — Loyers immobiliers (cycle fiscal)
 
@@ -536,6 +579,10 @@ noxa-fa/
 ### Staff (rang vérifié serveur)
 - **Panel staff & anti-cheat NUI** : **F3** (`/staffpanel`) — joueurs temps réel,
   alertes anti-triche live, logs AC, spectate/freeze/TP/kick/ban (helper+)
+- **Dashboard Anti-Cheat (design Claude)** : **F8** (`/anticheat`) — console de
+  visualisation lecture seule (joueurs/détections/watchlist/bans/logs réels), helper+
+- **Gestion serveur (design Claude)** : `/gestion` — visualisation config réelle
+  (items/véhicules/POI/jobs), superadmin (éditeur live fonctionnel : **F9**)
 - **Menu admin NUI** : **F10** (`/adminmenu`) — 9 sections, navigation flèches + souris
 - Commandes : `/kick` `/ban` `/unban` `/heal` `/revive` `/goto` `/bring` `/announce`
   `/setmoney` `/job` `/setjobwl` `/setgroup`

@@ -559,4 +559,17 @@ function DB.getAnticheatLogs(filterType, limit)
     ]], { limit or 60 }) or {}
 end
 
+--- Derniers bans (panel anti-cheat). Joint le pseudo connu du compte banni.
+---@param limit? integer
+---@return table[]
+function DB.getRecentBans(limit)
+    return MySQL.query.await([[
+        SELECT b.id, b.license, b.reason, b.banned_by, b.expire, b.active, b.created_at,
+               a.last_name AS name
+        FROM noxa_bans b
+        LEFT JOIN noxa_accounts a ON a.id = b.account_id
+        ORDER BY b.id DESC LIMIT ?
+    ]], { limit or 40 }) or {}
+end
+
 return DB
