@@ -342,8 +342,9 @@ S.onNet('noxa:inv:give', function(src, ply, targetId, slot, count)
     end
     ply:removeItem(e.name, count, slot)
     local it = CFG.getItem(e.name)
-    TriggerClientEvent('noxa:notify', src, ('Donné %dx %s.'):format(count, it.label), 'success')
-    TriggerClientEvent('noxa:notify', targetId, ('Reçu %dx %s.'):format(count, it.label), 'success')
+    local label = it and it.label or e.name
+    TriggerClientEvent('noxa:notify', src, ('Donné %dx %s.'):format(count, label), 'success')
+    TriggerClientEvent('noxa:notify', targetId, ('Reçu %dx %s.'):format(count, label), 'success')
 end)
 
 -- ---------------------------------------------------------------------

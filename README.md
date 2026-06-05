@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — stable-2.9 · 2026-06-05
+## État actuel — stable-2.10 · 2026-06-05
 
 | Système | État | Notes |
 |---|---|---|
@@ -24,7 +24,38 @@
 | HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 | MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; **migration in-game terminée** — concession/garage/fourrière + menu patron jobs + immobilier (porte/mobilier/confirmation) + **boutique épicerie** + **atelier mécanicien `/atelier`**. NUI custom réservée à HUD/notifs/banque/téléphone/inventaire/panels (admin/staff/gestion/anti-cheat) |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — Migration MenuV (boutique + atelier) · 2026-06-05
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — QA durcissement inventaire (nil-deref donner item) · 2026-06-05
+
+### Session QA — Correctif crash potentiel sur don d'item (nil-deref)
+
+Passe QA (zéro nouvelle feature). Chasse aux bugs sur l'ensemble des modules
+server/client : nil-deref, race conditions, events non sécurisés, math.floor
+oublié, requêtes N+1, fuites mémoire, index SQL.
+
+- **🟠 Corrigé — `inv:give` nil-deref (`inventory/server.lua`)** : après un don
+  d'item, les notifications émetteur/destinataire indexaient `it.label` sans
+  garde alors que `CFG.getItem(e.name)` peut retourner `nil` (item devenu
+  inconnu après un hot-reload de config via le panel Gestion, ou item injecté
+  par une ressource ESX tierce). Cas reproduisant le pattern **déjà gardé** du
+  handler `inv:drop` voisin (`it and it.label or e.name`) : la cohérence est
+  rétablie. Sans le correctif, le don d'un item « orphelin » crashait le thread
+  serveur (`attempt to index a nil value`).
+- **Faux positifs écartés (vérifiés, aucun changement nécessaire)** :
+  `GetEntityCoords` sur un ped invalide retourne `vector3(0,0,0)` en FiveM (pas
+  de crash — distance énorme, rejet propre) ; `DB.getOwnedPropertyTiers` est
+  déjà gardé `… or {}` (pas d'`ipairs(nil)`) ; l'ordre add→remove de `inv:give`
+  n'est **pas** une race (Lua coopératif, `addItem`/`removeItem` synchrones sans
+  yield, item source garanti présent).
+
+**Audit d'optimisation (RAS) :**
+- **Threads** : les 5 `Wait(0)` restants sont **légitimes** (DisableControlAction
+  menottes/inconscience par frame, rendu de texte réparation, polling hotbar
+  `IsControlJustPressed`). Thread de proximité POI à `Wait` adaptatif (500→200→0).
+- **SQL** : `SELECT *` réservés aux chargements ligne-entière par id/boot
+  (comptes, personnages, sociétés, biens) ; index présents sur toutes les
+  colonnes de recherche (license, citizenid, owner_cid, plate, state, target_cid…).
+- **Events** : 100 % des events réseau serveur passent par le wrapper sécurisé
+  `S.onNet` (rate-limit + joueur chargé + pcall) — aucun `RegisterNetEvent` nu.
 
 ### Session MenuV — Boutique épicerie & atelier mécanicien migrés NUI → MenuV
 
