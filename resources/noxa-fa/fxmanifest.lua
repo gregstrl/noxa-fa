@@ -113,6 +113,8 @@ client_scripts {
     'client/modules/world/fuel.lua',
     -- Synchro heure & météo (interpolation + verrou météo).
     'client/modules/world/sync.lua',
+    -- Safezones : zones de paix (no-damage / no-weapons) par proximité.
+    'client/modules/world/safezones.lua',
     -- Véhicules : concession/garage/fourrière (s'enregistre via World.on).
     'client/modules/vehicles/client.lua',
     -- Immobilier & téléphone

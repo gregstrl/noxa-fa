@@ -486,6 +486,21 @@ C.World = {
 }
 
 -- =====================================================================
+--  SAFEZONES — zones de paix (no-damage / no-weapons)
+--  Détection client par proximité (rayon sphérique). À l'intérieur :
+--    • noDamage  : le joueur ne subit aucun dégât (invincibilité locale) ;
+--    • noWeapons : tir bloqué + arme rangée (retour à mains nues).
+--  Bascule live serveur possible via C.Systems.safezones (désactivable).
+--  Coords = centres réels des points névralgiques (hôpital, MRPD, mairie).
+-- =====================================================================
+C.Safezones = {
+    { name = 'hospital',  label = 'Hôpital — Pillbox',  coords = vector3(298.6, -584.4, 43.3),   radius = 60.0, noDamage = true, noWeapons = true },
+    { name = 'mrpd',      label = 'Commissariat',       coords = vector3(428.0, -981.5, 30.7),   radius = 55.0, noDamage = true, noWeapons = true },
+    { name = 'cityhall',  label = 'Mairie',             coords = vector3(-545.0, -204.0, 38.2),  radius = 40.0, noDamage = true, noWeapons = true },
+    { name = 'spawn',     label = 'Zone d\'apparition', coords = vector3(-1037.0, -2738.0, 20.2), radius = 70.0, noDamage = true, noWeapons = true },
+}
+
+-- =====================================================================
 --  ÉPICERIE — catalogue (prix + effets besoins). Validé/borné serveur.
 -- =====================================================================
 C.Shops = {
@@ -580,6 +595,7 @@ C.Systems = {
     propertyRent  = true,    -- prélèvement des loyers immobiliers (cycle fiscal)
     economyTax    = true,    -- prélèvement des taxes/puits monétaires
     scheduledMsg  = true,    -- diffusion des messages serveur planifiés
+    safezones     = true,    -- zones de paix actives (no-damage / no-weapons)
 }
 
 -- =====================================================================

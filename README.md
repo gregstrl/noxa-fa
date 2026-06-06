@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — stable-2.13 · 2026-06-05
+## État actuel — stable-2.14 · 2026-06-06
 
 | Système | État | Notes |
 |---|---|---|
@@ -20,11 +20,33 @@
 | Téléphone | 🟡 | **Refonte visuelle « iOS premium » (Option C)** : dynamic island, dock translucide, grille d'apps, bulles SMS, carte de solde dégradée — calquée sur le design de référence Claude Design, **100 % vraies données FiveM** (Contacts, SMS temps réel, Canari, Banque, Carte, Réglages) ; appels à venir |
 | Jobs Police/EMS/Méca | ✅ | Police (menottes/fouille/amende/prison/MDT), EMS (ranimer/soigner + état inconscient), Méca (réparer + **atelier `/atelier` migré MenuV**) — portée & rôle revérifiés serveur · **menu patron `/boss` migré MenuV** (saisies numériques ID/grade/montant restent en dialogue NUI) |
 | Météo & Heure | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
+| Safezones (zones de paix) | ✅ | Zones config (hôpital, MRPD, mairie, spawn) — détection proximité native, **no-damage** (invincibilité locale) + **no-weapons** (tir bloqué/arme rangée), notif entrée/sortie, **bascule live F9** (`systems.safezones`), restauration garantie tout chemin (sortie/désactivation/resource stop) |
 | Immobilier (maisons/apparts) | ✅ | Achat (confirmation MenuV), entrée/sortie, verrou, mobilier — **menus de porte & mobilier migrés MenuV** — 4 paliers, persistance BDD, **loyers cycle fiscal** (puits monétaire, bascule live F9, impayé→verrou) |
 | HUD (minimap, vitesse, barres) | 🟡 | HUD permanent (besoins/argent/identité) ; minimap arrondie & compteur SVG à finaliser |
 | MenuV (menus unifiés) | ✅ | Ressource **buildée & déployable** (dist NUI compilé, fxmanifest racine, démarrée dans `server.cfg`) ; **migration in-game terminée** — concession/garage/fourrière + menu patron jobs + immobilier (porte/mobilier/confirmation) + **boutique épicerie** + **atelier mécanicien `/atelier`**. NUI custom réservée à HUD/notifs/banque/téléphone/inventaire/panels (admin/staff/gestion/anti-cheat) |
 
-> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — Correctifs BUGS.md (BUG-05/07/08/09), BUGS.md vidé · 2026-06-05
+> ✅ Fonctionnel · 🟡 En cours · ❌ Non démarré | Session — Safezones (no-damage / no-weapons), périmètre FOCUS Monde complété · 2026-06-06
+
+### Session — Safezones (zones de paix : no-damage / no-weapons) · 2026-06-06
+
+BUGS.md vide en début de session (zéro bug déclaré, priorité 1 traitée). Audit
+du périmètre FOCUS **Météo & Monde** : les **safezones** étaient listées comme
+livrable mais **ni configurées ni implémentées**. Comblé :
+
+- **`C.Safezones`** (`shared/config.lua`) : 4 zones névralgiques (hôpital
+  Pillbox, commissariat, mairie, zone d'apparition) — `coords` + `radius` +
+  drapeaux `noDamage` / `noWeapons` par zone.
+- **`client/modules/world/safezones.lua`** : détection de proximité **native**
+  (zéro ox_lib), polling adaptatif (1 s au repos → 0 ms à l'intérieur pour le
+  blocage du tir par frame). À l'intérieur : invincibilité locale + tir
+  désactivé/arme rangée (retour mains nues). Notification claire à l'entrée et
+  à la sortie.
+- **Bascule live F9** : drapeau `C.Systems.safezones` lu à chaque itération —
+  désactivable à chaud via le panel gestion serveur (broadcast `systems`), sans
+  restart. Désactivation = restauration immédiate du joueur s'il était en zone.
+- **Invariant de sûreté** : le joueur n'est **jamais** laissé invincible hors
+  zone — restauration sur sortie, désactivation système, TP hors rayon et
+  `onResourceStop`.
 
 ### Session QA — Correctifs BUGS.md (stable-2.13)
 
