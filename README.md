@@ -1,7 +1,7 @@
 # NOXA FA
 > Framework custom Noxa · Compatible ESX · **MenuV** (menus unifiés) · NUI custom (HUD/notifs/banque/téléphone/inventaire) · oxmysql
 
-## État actuel — stable-2.14 · 2026-06-06
+## État actuel — beta-2.15 · 2026-06-06
 
 | Système | État | Notes |
 |---|---|---|
@@ -17,7 +17,7 @@
 | Carte · Blips · POI | ✅ | 21 catégories de POI (banque, ATM, services, concession + **champs/labos/revendeurs drogue**, pêche, chasse), blips configurables, zones de proximité + prompt NUI overlay pur |
 | Drogues & Trafic | ✅ | **Chaîne récolte → transformation → vente** (cannabis/cocaïne/méth) via **MenuV** aux POI · 100 % autoritaire serveur (proximité revérifiée, cooldown, possession réelle) · alerte **dispatch police** probabiliste (blip GPS) · butin dans l'inventaire anti-dupe |
 | Activités légales | ✅ | **Pêche & chasse** via **MenuV** : achat d'outil, cueillette chronométrée (anim), butin probabiliste borné, **vente sur place** — proximité/outil/cooldown serveur |
-| Téléphone | 🟡 | **Refonte visuelle « iOS premium » (Option C)** : dynamic island, dock translucide, grille d'apps, bulles SMS, carte de solde dégradée — calquée sur le design de référence Claude Design, **100 % vraies données FiveM** (Contacts, SMS temps réel, Canari, Banque, Carte, Réglages) ; appels à venir |
+| Téléphone | 🟡 | **Design EXACT figé** (`noxa_phone`, F1) lié au serveur **sans toucher au visuel** : un `bridge.js` injecte les vraies données dans `window.PD` (numéro, propriétaire, contacts, conversations préchargées, tweets, solde banque) et relaie les actions (envoi SMS, post Canari) → `nuiCallback` → events `noxa:phone:*` → BDD. Live : SMS entrant + nouveau tweet. Conflit F1 résolu (ancien téléphone shell noxa-fa désactivé). **À valider en jeu** (beta) ; appels & démarrage de conversation hors-fil restent à câbler |
 | Jobs Police/EMS/Méca | ✅ | Police (menottes/fouille/amende/prison/MDT), EMS (ranimer/soigner + état inconscient), Méca (réparer + **atelier `/atelier` migré MenuV**) — portée & rôle revérifiés serveur · **menu patron `/boss` migré MenuV** (saisies numériques ID/grade/montant restent en dialogue NUI) |
 | Météo & Heure | ✅ | Horloge autoritaire + interpolation client, météo rotative verrouillée, broadcast 30s |
 | Safezones (zones de paix) | ✅ | Zones config (hôpital, MRPD, mairie, spawn) — détection proximité native, **no-damage** (invincibilité locale) + **no-weapons** (tir bloqué/arme rangée), notif entrée/sortie, **bascule live F9** (`systems.safezones`), restauration garantie tout chemin (sortie/désactivation/resource stop) |
@@ -47,6 +47,39 @@ livrable mais **ni configurées ni implémentées**. Comblé :
 - **Invariant de sûreté** : le joueur n'est **jamais** laissé invincible hors
   zone — restauration sur sortie, désactivation système, TP hors rayon et
   `onResourceStop`.
+
+### Session — Liaison du téléphone au serveur (beta-2.15)
+
+Le design EXACT du téléphone (`resources/noxa_phone/`, bundle auto-extractible
+figé) a été **lié au serveur sans modifier le visuel**. Découverte clé : le
+design lit ses données une seule fois via `const PD = window.PD` (mock embarqué)
+et n'écoute ni `postMessage` ni `message`.
+
+- **`html/bridge.js`** (nouveau) + **une seule ligne** `<script src="bridge.js">`
+  dans `index.html` (couche données uniquement, zéro markup/CSS). Le bridge
+  s'exécute une fois avant le remplacement du document par le bundler et installe
+  des écouteurs `window` (persistants) :
+  - remplace les données mock de `window.PD` par les **vraies données serveur**
+    (numéro, propriétaire, contacts, conversations préchargées, tweets, solde
+    banque/liquide). Le rendu paresseux des vues fait que la mutation de `PD`
+    suffit — pas besoin d'accéder au closure de l'app ni de toucher au design ;
+  - relaie les **actions** : envoi SMS (réponse dans un fil) et post Canari →
+    `nuiCallback` → `noxa:phone:*` → BDD ;
+  - applique les **mises à jour live** : SMS entrant (bulle ajoutée si le fil est
+    ouvert) et nouveau tweet (anti-doublon de nos propres posts) ;
+  - gère **open/close** (le design est un device flottant toujours rendu) et
+    masque l'overlay de déballage du bundler à la connexion.
+- **`noxa_phone/client.lua`** réécrit : F1 ouvre/ferme, `noxa:phone:request` au
+  démarrage, relais bidirectionnel events ↔ `SendNUIMessage` ↔ `nuiCallback`.
+- **Serveur** `phone/server.lua` : bootstrap enrichi (`bank`, `cash`, et
+  `threads` = conversations complètes préchargées, bornées) — additif, le
+  téléphone shell noxa-fa restait compatible.
+- **Conflit F1 résolu** : l'ancien module téléphone **client** de noxa-fa
+  (UI concurrente réimplémentée qui bindait aussi F1/`/phone`) est désactivé
+  dans le fxmanifest. Le module **serveur** reste l'unique source de données.
+- ⚠️ **À valider en jeu** : intégration revue statiquement (syntaxe JS/Lua OK),
+  non testée sur serveur FiveM. D'où le tag **beta**. Limites connues du design :
+  pas de composer « nouveau message » hors d'un fil existant, pas d'appels.
 
 ### Session QA — Correctifs BUGS.md (stable-2.13)
 

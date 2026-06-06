@@ -119,7 +119,13 @@ client_scripts {
     'client/modules/vehicles/client.lua',
     -- Immobilier & téléphone
     'client/modules/properties/client.lua',
-    'client/modules/phone/client.lua',
+    -- Téléphone : l'UI vit désormais dans la ressource `noxa_phone` (design figé
+    -- + bridge.js, lié au serveur). Ce module client était une UI concurrente
+    -- (réimplémentation dans le shell noxa-fa) qui bindait AUSSI F1/`/phone` ->
+    -- double ouverture. Désactivé pour laisser noxa_phone seul maître du F1.
+    -- Le module SERVEUR (server/modules/phone/server.lua) reste actif : c'est
+    -- lui qui alimente noxa_phone via les events noxa:phone:*.
+    -- 'client/modules/phone/client.lua',
     -- Trafic de drogue & activités (MenuV aux POI : récolte/transfo/vente, pêche/chasse).
     -- Après world/zones (s'enregistrent via World.on) et @menuv (menus).
     'client/modules/drugs/client.lua',

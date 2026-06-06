@@ -44,12 +44,23 @@ end
 -- ---------------------------------------------------------------------
 S.onNet('noxa:phone:request', function(src, ply)
     local number = ensureNumber(ply)
+    local convos = DB.getConversations(number)
+    -- Fils complets (peer + messages) pour les UI qui PRÉCHARGENT les
+    -- conversations (ex. design noxa_phone). Borné pour limiter les requêtes.
+    local threads = {}
+    for i = 1, math.min(#convos, 20) do
+        local peer = convos[i].peer
+        threads[#threads + 1] = { peer = peer, messages = DB.getThread(number, peer, 50) }
+    end
     TriggerClientEvent('noxa:phone:bootstrap', src, {
         number   = number,
         owner    = ply:getName(),
         contacts = DB.getContacts(ply.citizenid),
-        convos   = DB.getConversations(number),
+        convos   = convos,
+        threads  = threads,
         tweets   = DB.getTweets(30),
+        bank     = ply.bank or 0,
+        cash     = ply.cash or 0,
     })
 end)
 
